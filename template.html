@@ -1,0 +1,16 @@
+<!doctype html>
+{{range .Places}}
+<input type=checkbox>{{.}}
+{{end}}
+<div>
+	{{range .Ann}}
+	<div class="{{.Place}}">
+		<hr>
+		{{.Date.Format "Monday January 2 15:04"}} (fetched at {{.Fetched.Format "15:04"}})
+		<br>
+		<a href={{.ID}}>{{.Title}}</a> 
+		<br>
+		{{.Place}}, {{.Price}}
+	</div>
+	{{end}}
+</div>
