@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"sort"
 	"time"
 
@@ -119,6 +120,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	port := os.Getenv("PORT")
+	if port == "" {
+		log.Fatal("$PORT must be set")
+	}
+	log.Printf("Listening on port %v", port)
+
 	h := NewHandler()
-	panic(http.ListenAndServe(":8080", h))
+	log.Fatal(http.ListenAndServe(":"+port, h))
 }
