@@ -33,7 +33,7 @@ type Handler struct {
 }
 
 func NewHandler() *Handler {
-	db, err := sql.Open("postgres", "")
+	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		log.Fatal(err)
 	}
