@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/net/html"
-	"golang.org/x/net/html/charset"
+	"github.com/yansal/pollbc/Godeps/_workspace/src/golang.org/x/net/html"
+	"github.com/yansal/pollbc/Godeps/_workspace/src/golang.org/x/net/html/charset"
 )
 
 func fetch() (*html.Node, error) {

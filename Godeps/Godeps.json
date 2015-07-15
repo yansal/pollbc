@@ -1,0 +1,23 @@
+{
+	"ImportPath": "github.com/yansal/pollbc",
+	"GoVersion": "go1.4.2",
+	"Deps": [
+		{
+			"ImportPath": "github.com/lib/pq",
+			"Comment": "go1.0-cutoff-56-gdc50b6a",
+			"Rev": "dc50b6ad2d3ee836442cf3389009c7cd1e64bb43"
+		},
+		{
+			"ImportPath": "golang.org/x/net/html",
+			"Rev": "d9558e5c97f85372afee28cf2b6059d7d3818919"
+		},
+		{
+			"ImportPath": "golang.org/x/text/encoding",
+			"Rev": "3eb7007b740b66a77f3c85f2660a0240b284115a"
+		},
+		{
+			"ImportPath": "golang.org/x/text/transform",
+			"Rev": "3eb7007b740b66a77f3c85f2660a0240b284115a"
+		}
+	]
+}
