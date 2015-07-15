@@ -1,15 +1,14 @@
 package main
 
 import (
-	"encoding/json"
+	"database/sql"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"sort"
-	"sync"
 	"time"
+
+	_ "github.com/lib/pq"
 )
 
 type Announce struct {
@@ -28,35 +27,26 @@ func (d ByDate) Len() int           { return len(d) }
 func (d ByDate) Swap(i, j int)      { d[i], d[j] = d[j], d[i] }
 func (d ByDate) Less(i, j int) bool { return d[i].Date.After(d[j].Date) }
 
-type Data struct {
-	Ann    []Announce
-	Places []string
-}
 type Handler struct {
-	Data Data
-	sync.Mutex
+	db *sql.DB
 }
 
 func NewHandler() *Handler {
-	h := Handler{}
-	if _, err := os.Stat("db.json"); err == nil {
-		// Load db
-		b, err := ioutil.ReadFile("db.json")
-		if err != nil {
-			log.Fatal(err)
-		}
-		d := Data{}
-		a := make([]Announce, 0)
-		p := make([]string, 0)
-		d.Ann = a
-		d.Places = p
-		err = json.Unmarshal(b, &d)
-		if err != nil {
-			log.Fatal(err)
-		}
-		h.Data = d
+	db, err := sql.Open("postgres", "")
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = db.Ping()
+	if err != nil {
+		log.Fatal(err)
 	}
 
+	_, err = db.Exec("CREATE TABLE pollbc_announces (id varchar PRIMARY KEY, date timestamp with time zone, price varchar, place varchar, title varchar, fetched timestamp with time zone)")
+	if err != nil {
+		log.Print(err)
+	}
+
+	h := Handler{db: db}
 	go h.poll()
 	return &h
 }
@@ -71,69 +61,58 @@ func (h *Handler) poll() {
 		}
 		nodes := queryAnnounces(doc)
 
-		newAnn := make([]Announce, 0)
+		count := 0
 		for _, n := range nodes {
 			id := queryID(n)
-			if id == "" || h.hasID(id) {
+			if id == "" {
 				continue
 			}
+			var tmp string
+			err := h.db.QueryRow("SELECT id FROM pollbc_announces WHERE id=$1", id).Scan(&tmp)
+			if err != nil && err != sql.ErrNoRows {
+				log.Print(err)
+			}
+			if err == nil {
+				continue
+			}
+			count++
 
 			ann := Announce{ID: id, Fetched: time.Now()}
 			ann.Date = queryDate(n)
 			ann.Place = queryPlace(n)
 			ann.Price = queryPrice(n)
 			ann.Title = queryTitle(n)
-			newAnn = append(newAnn, ann)
-
-			if !h.hasPlace(ann.Place) {
-				h.Data.Places = append(h.Data.Places, ann.Place)
+			_, err = h.db.Exec("INSERT INTO pollbc_announces (id, date, price, place, title, fetched) VALUES ($1, $2, $3, $4, $5, $6)",
+				ann.ID, ann.Date, ann.Price, ann.Place, ann.Title, ann.Fetched)
+			if err != nil {
+				log.Print(err)
 			}
 		}
 
-		if len(newAnn) > 0 {
+		if count > 0 {
 			// TODO: Notify by email?
-			log.Printf("Number of new announces fetched:\t%d\n", len(newAnn))
-
-			// Save db
-			h.Lock()
-			h.Data.Ann = append(h.Data.Ann, newAnn...)
-			j, err := json.MarshalIndent(h.Data, "", "\t")
-			if err != nil {
-				log.Print(err)
-			}
-			err = ioutil.WriteFile("db.json", j, 0600)
-			if err != nil {
-				log.Print(err)
-			}
-			h.Unlock()
+			log.Printf("Number of new announces fetched:\t%d\n", count)
 		}
 		time.Sleep(5 * time.Second)
 	}
 }
-
-func (h *Handler) hasID(id string) bool {
-	for _, a := range h.Data.Ann {
-		if a.ID == id {
-			return true
-		}
-	}
-	return false
-}
-
-func (h *Handler) hasPlace(place string) bool {
-	for _, p := range h.Data.Places {
-		if p == place {
-			return true
-		}
-	}
-	return false
-}
-
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t := template.Must(template.ParseFiles("template.html"))
-	sort.Sort(ByDate(h.Data.Ann))
-	sort.Strings(h.Data.Places)
-	err := t.Execute(w, h.Data)
+	ann := make([]Announce, 0)
+	rows, err := h.db.Query("SELECT * FROM pollbc_announces")
+	for rows.Next() {
+		var id, price, place, title string
+		var date, fetched time.Time
+		err := rows.Scan(&id, &date, &price, &place, &title, &fetched)
+		if err != nil {
+			log.Print(err)
+		}
+
+		ann = append(ann, Announce{ID: id, Date: date, Price: price, Place: place, Title: title, Fetched: fetched})
+	}
+
+	sort.Sort(ByDate(ann))
+	err = t.Execute(w, ann)
 	if err != nil {
 		log.Print(err)
 	}
