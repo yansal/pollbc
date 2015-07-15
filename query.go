@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"golang.org/x/net/html"
+	"golang.org/x/net/html/charset"
 )
 
 func fetch() (*html.Node, error) {
@@ -16,7 +17,11 @@ func fetch() (*html.Node, error) {
 		return nil, err
 	}
 	defer r.Body.Close()
-	reader := r.Body
+	contentType := r.Header.Get("Content-Type")
+	reader, err := charset.NewReader(r.Body, contentType)
+	if err != nil {
+		return nil, err
+	}
 
 	doc, err := html.Parse(reader)
 	if err != nil {
