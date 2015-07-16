@@ -49,12 +49,12 @@ func NewHandler() *Handler {
 		log.Fatal(err)
 	}
 
-	_, err = db.Exec("CREATE TABLE pollbc_announces (id varchar PRIMARY KEY, date timestamp with time zone, price varchar, placeID serial, title varchar, fetched timestamp with time zone)")
+	err = createTableAnnounces(db)
 	if err != nil {
 		log.Print(err)
 	}
 
-	_, err = db.Exec("CREATE TABLE pollbc_place (id serial PRIMARY KEY, city varchar, department varchar, arrondissement varchar)")
+	err = createTablePlaces(db)
 	if err != nil {
 		log.Print(err)
 	}
@@ -82,20 +82,18 @@ func (h *Handler) poll() {
 				continue
 			}
 
-			var placeID int
-			var err error
-			err = h.db.QueryRow("SELECT id FROM pollbc_place WHERE city=$1 AND department=$2 AND arrondissement=$3",
-				city, department, arrondissement).Scan(&placeID)
-			if err == sql.ErrNoRows {
-				_, err = h.db.Exec("INSERT INTO pollbc_place (city, department, arrondissement) VALUES ($1, $2, $3)", city, department, arrondissement)
+			place := Place{Department: department, City: city, Arrondissement: arrondissement}
+			ok, err := hasPlace(h.db, place)
+			if err != nil {
+				log.Print(err)
+			} else if !ok {
+				err := insertPlace(h.db, place)
 				if err != nil {
 					log.Print(err)
 				}
-				err = h.db.QueryRow("SELECT id FROM pollbc_place WHERE city=$1 AND department=$2", city, department).Scan(&placeID)
-				if err != nil {
-					log.Print(err)
-				}
-			} else if err != nil {
+			}
+			placeID, err := selectIDFromPlace(h.db, place)
+			if err != nil {
 				log.Print(err)
 			}
 
@@ -103,25 +101,20 @@ func (h *Handler) poll() {
 			if id == "" {
 				continue
 			}
-			var tmp string
-			err = h.db.QueryRow("SELECT id FROM pollbc_announces WHERE id=$1", id).Scan(&tmp)
-			if err != nil && err != sql.ErrNoRows {
-				log.Print(err)
-			}
-			if err == nil {
-				continue
-			}
-			count++
-
-			ann := Announce{ID: id, Fetched: time.Now()}
-			ann.Date = queryDate(n)
-			ann.PlaceID = placeID
-			ann.Price = queryPrice(n)
-			ann.Title = queryTitle(n)
-			_, err = h.db.Exec("INSERT INTO pollbc_announces (id, date, price, placeID, title, fetched) VALUES ($1, $2, $3, $4, $5, $6)",
-				ann.ID, ann.Date, ann.Price, ann.PlaceID, ann.Title, ann.Fetched)
+			ok, err = hasAnnounce(h.db, id)
 			if err != nil {
 				log.Print(err)
+			} else if !ok {
+				count++
+				ann := Announce{ID: id, Fetched: time.Now()}
+				ann.Date = queryDate(n)
+				ann.PlaceID = placeID
+				ann.Price = queryPrice(n)
+				ann.Title = queryTitle(n)
+				err := insertAnnounce(h.db, ann)
+				if err != nil {
+					log.Print(err)
+				}
 			}
 		}
 
@@ -133,28 +126,22 @@ func (h *Handler) poll() {
 	}
 }
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ann := make([]Announce, 0)
+	ann, err := selectAnnounces(h.db)
+	if err != nil {
+		log.Print(err)
+	}
 	places := make(map[int]Place)
-	rows, err := h.db.Query("SELECT * FROM pollbc_announces")
-	for rows.Next() {
-		var id, price, title string
-		var placeID int
-		var date, fetched time.Time
-		err := rows.Scan(&id, &date, &price, &placeID, &title, &fetched)
+	for _, a := range ann {
+		_, ok := places[a.PlaceID]
+		if ok {
+			continue
+		}
+		place, err := selectPlace(h.db, a.PlaceID)
 		if err != nil {
 			log.Print(err)
+			continue
 		}
-		if _, ok := places[placeID]; !ok {
-			var id int
-			var city, department, arrondissement string
-			err = h.db.QueryRow("SELECT * FROM pollbc_place WHERE id=$1", placeID).Scan(&id, &city, &department, &arrondissement)
-			if err != nil {
-				log.Print(err)
-			}
-			places[id] = Place{City: city, Department: department, Arrondissement: arrondissement}
-		}
-
-		ann = append(ann, Announce{ID: id, Date: date, Price: price, PlaceID: placeID, Title: title, Fetched: fetched})
+		places[a.PlaceID] = place
 	}
 	sort.Sort(ByDate(ann))
 
