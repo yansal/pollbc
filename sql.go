@@ -62,6 +62,18 @@ func selectAnnounces(db *sql.DB) ([]Announce, error) {
 	if err != nil {
 		return nil, err
 	}
+	return scanAnnounces(rows)
+}
+
+func selectAnnouncesWherePlaceID(db *sql.DB, placeID int) ([]Announce, error) {
+	rows, err := db.Query("SELECT * FROM pollbc_announces WHERE placeID=$1", placeID)
+	if err != nil {
+		return nil, err
+	}
+	return scanAnnounces(rows)
+}
+
+func scanAnnounces(rows *sql.Rows) ([]Announce, error) {
 	ann := make([]Announce, 0)
 	for rows.Next() {
 		var id, price, title string

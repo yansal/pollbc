@@ -11,7 +11,7 @@
 		{{$place := index $places .PlaceID}}
 		{{$departement := $place.Department}}
 		{{$arrondissement := $place.Arrondissement}}
-		{{$place.City}}{{if $departement}} / {{$departement}}{{else}}, {{$arrondissement}}{{end}}
+		<a href="/?placeID={{.PlaceID}}">{{$place.City}}{{if $departement}} / {{$departement}}{{else}}, {{$arrondissement}}{{end}}</a>
 		{{if .Price}}<br><strong>{{.Price}}</strong>{{end}}
 	</div>
 	{{end}}

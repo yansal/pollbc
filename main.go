@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"sort"
+	"strconv"
 	"time"
 
 	_ "github.com/yansal/pollbc/Godeps/_workspace/src/github.com/lib/pq"
@@ -126,10 +127,25 @@ func (h *Handler) poll() {
 	}
 }
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ann, err := selectAnnounces(h.db)
-	if err != nil {
-		log.Print(err)
+	var ann []Announce
+	var err error
+	placeID := r.URL.Query().Get("placeID")
+	if placeID == "" {
+		ann, err = selectAnnounces(h.db)
+		if err != nil {
+			log.Print(err)
+		}
+	} else {
+		placeID, err := strconv.Atoi(placeID)
+		if err != nil {
+			log.Print(err)
+		}
+		ann, err = selectAnnouncesWherePlaceID(h.db, placeID)
+		if err != nil {
+			log.Print(err)
+		}
 	}
+
 	places := make(map[int]Place)
 	for _, a := range ann {
 		_, ok := places[a.PlaceID]
