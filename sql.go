@@ -11,13 +11,13 @@ func createTableAnnounces(db *sql.DB) error {
 }
 
 func createTablePlaces(db *sql.DB) error {
-	_, err := db.Exec("CREATE TABLE pollbc_place (id serial PRIMARY KEY, city varchar, department varchar, arrondissement varchar)")
+	_, err := db.Exec("CREATE TABLE pollbc_places (id serial PRIMARY KEY, city varchar, department varchar, arrondissement varchar)")
 	return err
 }
 
 func hasPlace(db *sql.DB, place Place) (bool, error) {
 	var id int
-	err := db.QueryRow("SELECT id FROM pollbc_place WHERE city=$1 AND department=$2 AND arrondissement=$3",
+	err := db.QueryRow("SELECT id FROM pollbc_places WHERE city=$1 AND department=$2 AND arrondissement=$3",
 		place.City, place.Department, place.Arrondissement).Scan(&id)
 	if err == sql.ErrNoRows {
 		return false, nil
@@ -29,13 +29,13 @@ func hasPlace(db *sql.DB, place Place) (bool, error) {
 }
 
 func insertPlace(db *sql.DB, place Place) error {
-	_, err := db.Exec("INSERT INTO pollbc_place (city, department, arrondissement) VALUES ($1, $2, $3)",
+	_, err := db.Exec("INSERT INTO pollbc_places (city, department, arrondissement) VALUES ($1, $2, $3)",
 		place.City, place.Department, place.Arrondissement)
 	return err
 }
 
-func selectIDFromPlace(db *sql.DB, place Place) (id int, err error) {
-	err = db.QueryRow("SELECT id FROM pollbc_place WHERE city=$1 AND department=$2 AND arrondissement=$3",
+func selectIDFromPlaces(db *sql.DB, place Place) (id int, err error) {
+	err = db.QueryRow("SELECT id FROM pollbc_places WHERE city=$1 AND department=$2 AND arrondissement=$3",
 		place.City, place.Department, place.Arrondissement).Scan(&id)
 	return id, err
 }
@@ -78,7 +78,7 @@ func selectAnnounces(db *sql.DB) ([]Announce, error) {
 
 func selectPlace(db *sql.DB, id int) (Place, error) {
 	var city, department, arrondissement string
-	err := db.QueryRow("SELECT * FROM pollbc_place WHERE id=$1", id).Scan(&id, &city, &department, &arrondissement)
+	err := db.QueryRow("SELECT * FROM pollbc_places WHERE id=$1", id).Scan(&id, &city, &department, &arrondissement)
 	if err != nil {
 		return Place{}, err
 	}

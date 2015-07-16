@@ -92,7 +92,7 @@ func (h *Handler) poll() {
 					log.Print(err)
 				}
 			}
-			placeID, err := selectIDFromPlace(h.db, place)
+			placeID, err := selectIDFromPlaces(h.db, place)
 			if err != nil {
 				log.Print(err)
 			}
