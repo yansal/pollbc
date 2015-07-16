@@ -71,6 +71,13 @@ func selectAnnounces(db *sql.DB) ([]Announce, error) {
 		if err != nil {
 			return ann, err
 		}
+
+		paris, err := time.LoadLocation("Europe/Paris")
+		if err != nil {
+			return ann, err
+		}
+		fetched = fetched.In(paris)
+
 		ann = append(ann, Announce{ID: id, Date: date, Price: price, PlaceID: placeID, Title: title, Fetched: fetched})
 	}
 	return ann, nil
