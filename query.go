@@ -145,7 +145,7 @@ func queryDate(n *html.Node) time.Time {
 	return time.Date(y, mon, d, h, min, 0, 0, time.Local)
 }
 
-func queryPlace(n *html.Node) string {
+func queryPlace(n *html.Node) (department, city, arrondissement string) {
 	var placeNode *html.Node
 	var f func(*html.Node)
 	f = func(n *html.Node) {
@@ -163,9 +163,22 @@ func queryPlace(n *html.Node) string {
 	}
 	f(n)
 	if placeNode == nil {
-		return ""
+		return "", "", ""
 	}
-	return strings.Join(strings.Fields(strings.TrimSpace(placeNode.FirstChild.Data)), " ")
+	place := strings.Join(strings.Fields(strings.TrimSpace(placeNode.FirstChild.Data)), " ")
+	split := strings.Split(place, "/")
+	if len(split) == 1 {
+		split := strings.Fields(split[0])
+		city = split[0]
+		arrondissement = split[1]
+		department = ""
+		return
+	} else {
+		city = strings.TrimSpace(split[0])
+		department = strings.TrimSpace(split[1])
+		arrondissement = ""
+		return
+	}
 }
 
 func queryPrice(n *html.Node) string {

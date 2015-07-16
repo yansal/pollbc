@@ -1,13 +1,18 @@
+{{$places := .Places}}
 <!doctype html>
 <div>
-	{{range .}}
-	<div class="{{.Place}}">
+	{{range .Announces}}
+	<div>
 		<hr>
 		{{.Date.Format "Monday January 2 15:04"}} (fetched at {{.Fetched.Format "15:04"}})
 		<br>
 		<a href={{.ID}}>{{.Title}}</a> 
 		<br>
-		{{.Place}}, {{.Price}}
+		{{$place := index $places .PlaceID}}
+		{{$departement := $place.Department}}
+		{{$arrondissement := $place.Arrondissement}}
+		{{$place.City}}{{if $departement}} / {{$departement}}{{else}}, {{$arrondissement}}{{end}}
+		{{if .Price}}<br><strong>{{.Price}}</strong>{{end}}
 	</div>
 	{{end}}
 </div>

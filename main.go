@@ -12,12 +12,19 @@ import (
 	_ "github.com/yansal/pollbc/Godeps/_workspace/src/github.com/lib/pq"
 )
 
+type Place struct {
+	City           string
+	Department     string
+	Arrondissement string
+}
+
 type Announce struct {
 	ID    string
 	Date  time.Time
-	Place string
 	Price string
 	Title string
+
+	PlaceID int
 
 	Fetched time.Time
 }
@@ -42,7 +49,12 @@ func NewHandler() *Handler {
 		log.Fatal(err)
 	}
 
-	_, err = db.Exec("CREATE TABLE pollbc_announces (id varchar PRIMARY KEY, date timestamp with time zone, price varchar, place varchar, title varchar, fetched timestamp with time zone)")
+	_, err = db.Exec("CREATE TABLE pollbc_announces (id varchar PRIMARY KEY, date timestamp with time zone, price varchar, placeID serial, title varchar, fetched timestamp with time zone)")
+	if err != nil {
+		log.Print(err)
+	}
+
+	_, err = db.Exec("CREATE TABLE pollbc_place (id serial PRIMARY KEY, city varchar, department varchar, arrondissement varchar)")
 	if err != nil {
 		log.Print(err)
 	}
@@ -64,12 +76,35 @@ func (h *Handler) poll() {
 
 		count := 0
 		for _, n := range nodes {
+			department, city, arrondissement := queryPlace(n)
+			if department == "" && arrondissement == "" {
+				log.Print("error: department and arrondissement are both null string")
+				continue
+			}
+
+			var placeID int
+			var err error
+			err = h.db.QueryRow("SELECT id FROM pollbc_place WHERE city=$1 AND department=$2 AND arrondissement=$3",
+				city, department, arrondissement).Scan(&placeID)
+			if err == sql.ErrNoRows {
+				_, err = h.db.Exec("INSERT INTO pollbc_place (city, department, arrondissement) VALUES ($1, $2, $3)", city, department, arrondissement)
+				if err != nil {
+					log.Print(err)
+				}
+				err = h.db.QueryRow("SELECT id FROM pollbc_place WHERE city=$1 AND department=$2", city, department).Scan(&placeID)
+				if err != nil {
+					log.Print(err)
+				}
+			} else if err != nil {
+				log.Print(err)
+			}
+
 			id := queryID(n)
 			if id == "" {
 				continue
 			}
 			var tmp string
-			err := h.db.QueryRow("SELECT id FROM pollbc_announces WHERE id=$1", id).Scan(&tmp)
+			err = h.db.QueryRow("SELECT id FROM pollbc_announces WHERE id=$1", id).Scan(&tmp)
 			if err != nil && err != sql.ErrNoRows {
 				log.Print(err)
 			}
@@ -80,11 +115,11 @@ func (h *Handler) poll() {
 
 			ann := Announce{ID: id, Fetched: time.Now()}
 			ann.Date = queryDate(n)
-			ann.Place = queryPlace(n)
+			ann.PlaceID = placeID
 			ann.Price = queryPrice(n)
 			ann.Title = queryTitle(n)
-			_, err = h.db.Exec("INSERT INTO pollbc_announces (id, date, price, place, title, fetched) VALUES ($1, $2, $3, $4, $5, $6)",
-				ann.ID, ann.Date, ann.Price, ann.Place, ann.Title, ann.Fetched)
+			_, err = h.db.Exec("INSERT INTO pollbc_announces (id, date, price, placeID, title, fetched) VALUES ($1, $2, $3, $4, $5, $6)",
+				ann.ID, ann.Date, ann.Price, ann.PlaceID, ann.Title, ann.Fetched)
 			if err != nil {
 				log.Print(err)
 			}
@@ -98,22 +133,37 @@ func (h *Handler) poll() {
 	}
 }
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	t := template.Must(template.ParseFiles("template.html"))
 	ann := make([]Announce, 0)
+	places := make(map[int]Place)
 	rows, err := h.db.Query("SELECT * FROM pollbc_announces")
 	for rows.Next() {
-		var id, price, place, title string
+		var id, price, title string
+		var placeID int
 		var date, fetched time.Time
-		err := rows.Scan(&id, &date, &price, &place, &title, &fetched)
+		err := rows.Scan(&id, &date, &price, &placeID, &title, &fetched)
 		if err != nil {
 			log.Print(err)
 		}
+		if _, ok := places[placeID]; !ok {
+			var id int
+			var city, department, arrondissement string
+			err = h.db.QueryRow("SELECT * FROM pollbc_place WHERE id=$1", placeID).Scan(&id, &city, &department, &arrondissement)
+			if err != nil {
+				log.Print(err)
+			}
+			places[id] = Place{City: city, Department: department, Arrondissement: arrondissement}
+		}
 
-		ann = append(ann, Announce{ID: id, Date: date, Price: price, Place: place, Title: title, Fetched: fetched})
+		ann = append(ann, Announce{ID: id, Date: date, Price: price, PlaceID: placeID, Title: title, Fetched: fetched})
 	}
-
 	sort.Sort(ByDate(ann))
-	err = t.Execute(w, ann)
+
+	data := struct {
+		Announces []Announce
+		Places    map[int]Place
+	}{ann, places}
+	t := template.Must(template.ParseFiles("template.html"))
+	err = t.Execute(w, data)
 	if err != nil {
 		log.Print(err)
 	}
