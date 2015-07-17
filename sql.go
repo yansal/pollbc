@@ -101,5 +101,5 @@ func selectPlace(db *sql.DB, id int) (Place, error) {
 	if err != nil {
 		return Place{}, err
 	}
-	return Place{City: city, Department: department, Arrondissement: arrondissement}, nil
+	return Place{ID: id, City: city, Department: department, Arrondissement: arrondissement}, nil
 }

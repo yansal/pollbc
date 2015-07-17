@@ -14,6 +14,7 @@ import (
 )
 
 type Place struct {
+	ID             int
 	City           string
 	Department     string
 	Arrondissement string
@@ -126,23 +127,28 @@ func (h *Handler) poll() {
 		time.Sleep(5 * time.Second)
 	}
 }
+
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var ann []Announce
 	var err error
-	placeID := r.URL.Query().Get("placeID")
-	if placeID == "" {
+	q := map[string][]string(r.URL.Query())
+	placeIDs, ok := q["placeID"]
+	if !ok {
 		ann, err = selectAnnounces(h.db)
 		if err != nil {
 			log.Print(err)
 		}
 	} else {
-		placeID, err := strconv.Atoi(placeID)
-		if err != nil {
-			log.Print(err)
-		}
-		ann, err = selectAnnouncesWherePlaceID(h.db, placeID)
-		if err != nil {
-			log.Print(err)
+		for _, placeID := range placeIDs {
+			placeID, err := strconv.Atoi(placeID)
+			if err != nil {
+				log.Print(err)
+			}
+			newAnn, err := selectAnnouncesWherePlaceID(h.db, placeID)
+			if err != nil {
+				log.Print(err)
+			}
+			ann = append(ann, newAnn...)
 		}
 	}
 

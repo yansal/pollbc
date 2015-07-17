@@ -1,5 +1,13 @@
-{{$places := .Places}}
 <!doctype html>
+{{$places := .Places}}
+<div>
+	<form action="/">
+		{{range .Places}}
+		<input type="checkbox" name="placeID" value="{{.ID}}">{{.City}}{{if .Department}} / {{.Department}}{{else}}, {{.Arrondissement}}{{end}}
+		{{end}}
+		<br><input type="submit" value="Filter">
+	</form>
+</div>
 <div>
 	{{range .Announces}}
 	<div>
