@@ -1,7 +1,7 @@
 # pollbc
 Poll leboncoin.fr and notify when new announces are available
 
-See it running at https://secret-inlet-8046.herokuapp.com/
+See it running at https://pollbc.herokuapp.com/
 
 ## Run
 To develop locally, a running instance of PostgreSQL is required. On OSX, type:
