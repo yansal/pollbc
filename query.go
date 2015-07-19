@@ -79,10 +79,6 @@ func queryDate(n *html.Node) time.Time {
 	date := dateNode.FirstChild.NextSibling.FirstChild.Data
 	clock := dateNode.FirstChild.NextSibling.NextSibling.NextSibling.FirstChild.Data
 
-	paris, err := time.LoadLocation("Europe/Paris")
-	if err != nil {
-		log.Fatal(err)
-	}
 	now := time.Now().In(paris)
 	var y, d int
 	var mon time.Month

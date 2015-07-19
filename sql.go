@@ -1,9 +1,6 @@
 package main
 
-import (
-	"database/sql"
-	"time"
-)
+import "database/sql"
 
 func createTableAnnounces(db *sql.DB) error {
 	_, err := db.Exec("CREATE TABLE pollbc_announces (id varchar PRIMARY KEY, date timestamp with time zone, price varchar, placeID serial, title varchar, fetched timestamp with time zone)")
@@ -84,10 +81,6 @@ func scanAnnounces(rows *sql.Rows) ([]Announce, error) {
 			return ann, err
 		}
 
-		paris, err := time.LoadLocation("Europe/Paris")
-		if err != nil {
-			return ann, err
-		}
 		a.Fetched = a.Fetched.In(paris)
 
 		ann = append(ann, a)

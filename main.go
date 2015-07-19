@@ -13,6 +13,16 @@ import (
 	_ "github.com/yansal/pollbc/Godeps/_workspace/src/github.com/lib/pq"
 )
 
+var paris *time.Location
+
+func init() {
+	var err error
+	paris, err = time.LoadLocation("Europe/Paris")
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 type Place struct {
 	ID             int
 	City           string
