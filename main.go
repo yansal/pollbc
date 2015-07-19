@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"html/template"
 	"log"
 	"net/http"
@@ -10,8 +9,22 @@ import (
 	"strconv"
 	"time"
 
-	_ "github.com/yansal/pollbc/Godeps/_workspace/src/github.com/lib/pq"
+	"github.com/yansal/pollbc/models"
 )
+
+func init() {
+	models.InitDB(os.Getenv("DATABASE_URL"))
+	var err error
+	err = models.CreateTableAnnounces()
+	if err != nil {
+		log.Print(err)
+	}
+
+	err = models.CreateTablePlaces()
+	if err != nil {
+		log.Print(err)
+	}
+}
 
 var paris *time.Location
 
@@ -21,55 +34,6 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-}
-
-type Place struct {
-	ID             int
-	City           string
-	Department     string
-	Arrondissement string
-}
-
-type Announce struct {
-	ID    string
-	Date  time.Time
-	Price string
-	Title string
-
-	PlaceID int
-
-	Fetched time.Time
-}
-
-type ByDate []Announce
-
-func (d ByDate) Len() int           { return len(d) }
-func (d ByDate) Swap(i, j int)      { d[i], d[j] = d[j], d[i] }
-func (d ByDate) Less(i, j int) bool { return d[i].Date.After(d[j].Date) }
-
-var db *sql.DB
-
-func init() {
-	var err error
-	db, err = sql.Open("postgres", os.Getenv("DATABASE_URL"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = db.Ping()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = createTableAnnounces(db)
-	if err != nil {
-		log.Print(err)
-	}
-
-	err = createTablePlaces(db)
-	if err != nil {
-		log.Print(err)
-	}
-
 }
 
 func poll() {
@@ -90,16 +54,16 @@ func poll() {
 				continue
 			}
 
-			ok, err := hasPlace(db, place)
+			ok, err := models.HasPlace(place)
 			if err != nil {
 				log.Print(err)
 			} else if !ok {
-				err := insertPlace(db, place)
+				err := models.InsertPlace(place)
 				if err != nil {
 					log.Print(err)
 				}
 			}
-			placeID, err := selectIDFromPlaces(db, place)
+			placeID, err := models.SelectIDFromPlaces(place)
 			if err != nil {
 				log.Print(err)
 			}
@@ -108,17 +72,17 @@ func poll() {
 			if id == "" {
 				continue
 			}
-			ok, err = hasAnnounce(db, id)
+			ok, err = models.HasAnnounce(id)
 			if err != nil {
 				log.Print(err)
 			} else if !ok {
 				count++
-				ann := Announce{ID: id, Fetched: time.Now()}
+				ann := models.Announce{ID: id, Fetched: time.Now().In(paris)}
 				ann.Date = queryDate(n)
 				ann.PlaceID = placeID
 				ann.Price = queryPrice(n)
 				ann.Title = queryTitle(n)
-				err := insertAnnounce(db, ann)
+				err := models.InsertAnnounce(ann)
 				if err != nil {
 					log.Print(err)
 				}
@@ -134,9 +98,9 @@ func poll() {
 }
 
 func serveHTTP(w http.ResponseWriter, r *http.Request) {
-	var ann []Announce
+	var ann []models.Announce
 	var departments []string
-	places := make(map[int]Place)
+	places := make(map[int]models.Place)
 
 	q := map[string][]string(r.URL.Query())
 	placeIDsQuery := q["placeID"]
@@ -149,19 +113,19 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				log.Print(err)
 			}
-			dpt, err := selectDepartmentWhereID(db, placeID)
+			dpt, err := models.SelectDepartmentWhereID(placeID)
 			if err != nil {
 				log.Print(err)
 			}
 			departments[dpt] = struct{}{}
-			newAnn, err := selectAnnouncesWherePlaceID(db, placeID)
+			newAnn, err := models.SelectAnnouncesWherePlaceID(placeID)
 			if err != nil {
 				log.Print(err)
 			}
 			ann = append(ann, newAnn...)
 		}
 		for dpt := range departments {
-			departmentPlaces, err := selectPlacesWhereDepartment(db, dpt)
+			departmentPlaces, err := models.SelectPlacesWhereDepartment(dpt)
 			if err != nil {
 				log.Print(err)
 			}
@@ -171,13 +135,13 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	} else if departmentsQuery != nil {
 		for _, department := range departmentsQuery {
-			departmentPlaces, err := selectPlacesWhereDepartment(db, department)
+			departmentPlaces, err := models.SelectPlacesWhereDepartment(department)
 			if err != nil {
 				log.Print(err)
 			}
 			for id, place := range departmentPlaces {
 				places[id] = place
-				newAnn, err := selectAnnouncesWherePlaceID(db, id)
+				newAnn, err := models.SelectAnnouncesWherePlaceID(id)
 				if err != nil {
 					log.Print(err)
 				}
@@ -186,29 +150,29 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		var err error
-		ann, err = selectAnnounces(db)
+		ann, err = models.SelectAnnounces()
 		if err != nil {
 			log.Print(err)
 		}
-		departments, err = selectDistinctDepartmentFromPlaces(db)
+		departments, err = models.SelectDistinctDepartmentFromPlaces()
 		if err != nil {
 			log.Print(err)
 		}
 		sort.Strings(departments)
-		places, err = selectPlaces(db)
+		places, err = models.SelectPlaces()
 		if err != nil {
 			log.Print(err)
 		}
 	}
 
-	sort.Sort(ByDate(ann))
+	sort.Sort(models.ByDate(ann))
 	if len(ann) > 35 {
 		ann = ann[:35]
 	}
 
 	data := struct {
-		Announces   []Announce
-		Places      map[int]Place
+		Announces   []models.Announce
+		Places      map[int]models.Place
 		Departments []string
 	}{ann, places, departments}
 	t := template.Must(template.ParseFiles("template.html"))

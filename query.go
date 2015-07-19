@@ -11,6 +11,7 @@ import (
 
 	"github.com/yansal/pollbc/Godeps/_workspace/src/golang.org/x/net/html"
 	"github.com/yansal/pollbc/Godeps/_workspace/src/golang.org/x/net/html/charset"
+	"github.com/yansal/pollbc/models"
 )
 
 func fetch() (*html.Node, error) {
@@ -147,7 +148,7 @@ func queryDate(n *html.Node) time.Time {
 	return time.Date(y, mon, d, h, min, 0, 0, time.Local)
 }
 
-func queryPlace(n *html.Node) (Place, error) {
+func queryPlace(n *html.Node) (models.Place, error) {
 	var placeNode *html.Node
 	var f func(*html.Node)
 	f = func(n *html.Node) {
@@ -164,7 +165,7 @@ func queryPlace(n *html.Node) (Place, error) {
 		}
 	}
 	f(n)
-	place := Place{}
+	place := models.Place{}
 	if placeNode == nil {
 		// TODO render node
 		return place, errors.New("queryPlace: can't find <div class=placement> in html node")
