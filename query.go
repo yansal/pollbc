@@ -1,6 +1,8 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -145,7 +147,7 @@ func queryDate(n *html.Node) time.Time {
 	return time.Date(y, mon, d, h, min, 0, 0, time.Local)
 }
 
-func queryPlace(n *html.Node) (department, city, arrondissement string) {
+func queryPlace(n *html.Node) (Place, error) {
 	var placeNode *html.Node
 	var f func(*html.Node)
 	f = func(n *html.Node) {
@@ -162,23 +164,36 @@ func queryPlace(n *html.Node) (department, city, arrondissement string) {
 		}
 	}
 	f(n)
+	place := Place{}
 	if placeNode == nil {
-		return "", "", ""
+		// TODO render node
+		return place, errors.New("queryPlace: can't find <div class=placement> in html node")
 	}
-	place := strings.Join(strings.Fields(strings.TrimSpace(placeNode.FirstChild.Data)), " ")
-	split := strings.Split(place, "/")
-	if len(split) == 1 {
+
+	placeString := strings.Join(strings.Fields(strings.TrimSpace(placeNode.FirstChild.Data)), " ")
+	split := strings.Split(placeString, "/")
+	switch len(split) {
+	case 1:
 		split := strings.Fields(split[0])
-		city = split[0]
-		arrondissement = split[1]
-		department = ""
-		return
-	} else {
-		city = strings.TrimSpace(split[0])
-		department = strings.TrimSpace(split[1])
-		arrondissement = ""
-		return
+		if len(split) != 2 {
+			return place, fmt.Errorf("queryPlace: can't parse %v", split)
+		}
+
+		place.City = split[0]
+		place.Arrondissement = split[1]
+	case 2:
+		place.City = strings.TrimSpace(split[0])
+		place.Department = strings.TrimSpace(split[1])
+		if place.City == "" {
+			return place, fmt.Errorf("queryPlace: city is null string in %v", split)
+		}
+		if place.Department == "" {
+			return place, fmt.Errorf("queryPlace: department is null string in %v", split)
+		}
+	default:
+		return place, fmt.Errorf("queryPlace: can't parse %v", split)
 	}
+	return place, nil
 }
 
 func queryPrice(n *html.Node) string {

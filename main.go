@@ -88,13 +88,12 @@ func (h *Handler) poll() {
 
 		count := 0
 		for _, n := range nodes {
-			department, city, arrondissement := queryPlace(n)
-			if department == "" && arrondissement == "" {
-				log.Print("error: department and arrondissement are both null string")
+			place, err := queryPlace(n)
+			if err != nil {
+				log.Print(err)
 				continue
 			}
 
-			place := Place{Department: department, City: city, Arrondissement: arrondissement}
 			ok, err := hasPlace(h.db, place)
 			if err != nil {
 				log.Print(err)
