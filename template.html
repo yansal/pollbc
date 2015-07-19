@@ -25,11 +25,13 @@
 {{end}}
 
 {{$places := .Places}}
+{{$loc := .Location}}
 <div>
 	{{range .Announces}}
 	<div>
 		<hr>
-		{{.Date.Format "Monday January 2 15:04"}} (fetched at {{.Fetched.Format "15:04"}})
+		{{$fetched := .Fetched.In $loc}}
+		{{.Date.Format "Monday January 2 15:04"}} (fetched at {{$fetched.Format "15:04"}})
 		<br>
 		<a href={{.ID}}>{{.Title}}</a> 
 		<br>

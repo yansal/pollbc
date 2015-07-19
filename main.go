@@ -174,7 +174,8 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 		Announces   []models.Announce
 		Places      map[int]models.Place
 		Departments []string
-	}{ann, places, departments}
+		Location    *time.Location
+	}{ann, places, departments, paris}
 	t := template.Must(template.ParseFiles("template.html"))
 	err := t.Execute(w, data)
 	if err != nil {
