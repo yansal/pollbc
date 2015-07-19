@@ -8,7 +8,7 @@
 		{{range .Places}}
 		<input type="checkbox" name="placeID" value="{{.ID}}">
 		{{if .City}}
-		{{.City}}{{if .Department}} / {{.Department}}{{else}}, {{.Arrondissement}}{{end}}
+		{{.City}}{{if .Department}} / {{.Department}}{{else}} {{.Arrondissement}}{{end}}
 		{{else}}
 		{{.Department}}
 		{{end}}
@@ -29,7 +29,7 @@
 		{{$arrondissement := $place.Arrondissement}}
 		<a href="/?placeID={{.PlaceID}}">
 			{{if $place.City}}
-			{{$place.City}}{{if $place.Department}} / {{$place.Department}}{{else}}, {{$place.Arrondissement}}{{end}}
+			{{$place.City}}{{if $place.Department}} / {{$place.Department}}{{else}} {{$place.Arrondissement}}{{end}}
 			{{else}}
 			{{$place.Department}}
 			{{end}}
