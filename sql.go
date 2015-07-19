@@ -62,6 +62,7 @@ func selectAnnounces(db *sql.DB) ([]Announce, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	return scanAnnounces(rows)
 }
 
@@ -70,16 +71,15 @@ func selectAnnouncesWherePlaceID(db *sql.DB, placeID int) ([]Announce, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	return scanAnnounces(rows)
 }
 
 func scanAnnounces(rows *sql.Rows) ([]Announce, error) {
 	ann := make([]Announce, 0)
 	for rows.Next() {
-		var id, price, title string
-		var placeID int
-		var date, fetched time.Time
-		err := rows.Scan(&id, &date, &price, &placeID, &title, &fetched)
+		a := Announce{}
+		err := rows.Scan(&a.ID, &a.Date, &a.Price, &a.PlaceID, &a.Title, &a.Fetched)
 		if err != nil {
 			return ann, err
 		}
@@ -88,18 +88,19 @@ func scanAnnounces(rows *sql.Rows) ([]Announce, error) {
 		if err != nil {
 			return ann, err
 		}
-		fetched = fetched.In(paris)
+		a.Fetched = a.Fetched.In(paris)
 
-		ann = append(ann, Announce{ID: id, Date: date, Price: price, PlaceID: placeID, Title: title, Fetched: fetched})
+		ann = append(ann, a)
+	}
+	if err := rows.Err(); err != nil {
+		return ann, err
 	}
 	return ann, nil
 }
 
 func selectPlace(db *sql.DB, id int) (Place, error) {
-	var city, department, arrondissement string
-	err := db.QueryRow("SELECT * FROM pollbc_places WHERE id=$1", id).Scan(&id, &city, &department, &arrondissement)
-	if err != nil {
-		return Place{}, err
-	}
-	return Place{ID: id, City: city, Department: department, Arrondissement: arrondissement}, nil
+	place := Place{}
+	err := db.QueryRow("SELECT * FROM pollbc_places WHERE id=$1", id).
+		Scan(&place.ID, &place.City, &place.Department, &place.Arrondissement)
+	return place, err
 }
