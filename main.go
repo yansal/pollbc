@@ -47,12 +47,11 @@ func (d ByDate) Len() int           { return len(d) }
 func (d ByDate) Swap(i, j int)      { d[i], d[j] = d[j], d[i] }
 func (d ByDate) Less(i, j int) bool { return d[i].Date.After(d[j].Date) }
 
-type Handler struct {
-	db *sql.DB
-}
+var db *sql.DB
 
-func NewHandler() *Handler {
-	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
+func init() {
+	var err error
+	db, err = sql.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -71,7 +70,12 @@ func NewHandler() *Handler {
 		log.Print(err)
 	}
 
-	h := Handler{db: db}
+}
+
+type Handler struct{}
+
+func NewHandler() *Handler {
+	h := Handler{}
 	go h.poll()
 	return &h
 }
@@ -94,16 +98,16 @@ func (h *Handler) poll() {
 				continue
 			}
 
-			ok, err := hasPlace(h.db, place)
+			ok, err := hasPlace(db, place)
 			if err != nil {
 				log.Print(err)
 			} else if !ok {
-				err := insertPlace(h.db, place)
+				err := insertPlace(db, place)
 				if err != nil {
 					log.Print(err)
 				}
 			}
-			placeID, err := selectIDFromPlaces(h.db, place)
+			placeID, err := selectIDFromPlaces(db, place)
 			if err != nil {
 				log.Print(err)
 			}
@@ -112,7 +116,7 @@ func (h *Handler) poll() {
 			if id == "" {
 				continue
 			}
-			ok, err = hasAnnounce(h.db, id)
+			ok, err = hasAnnounce(db, id)
 			if err != nil {
 				log.Print(err)
 			} else if !ok {
@@ -122,7 +126,7 @@ func (h *Handler) poll() {
 				ann.PlaceID = placeID
 				ann.Price = queryPrice(n)
 				ann.Title = queryTitle(n)
-				err := insertAnnounce(h.db, ann)
+				err := insertAnnounce(db, ann)
 				if err != nil {
 					log.Print(err)
 				}
@@ -143,7 +147,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	q := map[string][]string(r.URL.Query())
 	placeIDs, ok := q["placeID"]
 	if !ok {
-		ann, err = selectAnnounces(h.db)
+		ann, err = selectAnnounces(db)
 		if err != nil {
 			log.Print(err)
 		}
@@ -153,7 +157,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				log.Print(err)
 			}
-			newAnn, err := selectAnnouncesWherePlaceID(h.db, placeID)
+			newAnn, err := selectAnnouncesWherePlaceID(db, placeID)
 			if err != nil {
 				log.Print(err)
 			}
@@ -167,7 +171,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if ok {
 			continue
 		}
-		place, err := selectPlace(h.db, a.PlaceID)
+		place, err := selectPlace(db, a.PlaceID)
 		if err != nil {
 			log.Print(err)
 			continue
