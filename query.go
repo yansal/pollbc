@@ -174,13 +174,16 @@ func queryPlace(n *html.Node) (Place, error) {
 	split := strings.Split(placeString, "/")
 	switch len(split) {
 	case 1:
-		split := strings.Fields(split[0])
-		if len(split) != 2 {
-			return place, fmt.Errorf("queryPlace: can't parse %v", split)
+		fields := strings.Fields(split[0])
+		switch len(fields) {
+		case 1:
+			place.Department = fields[0]
+		case 2:
+			place.City = fields[0]
+			place.Arrondissement = fields[1]
+		default:
+			return place, fmt.Errorf("queryPlace: can't parse %v", fields)
 		}
-
-		place.City = split[0]
-		place.Arrondissement = split[1]
 	case 2:
 		place.City = strings.TrimSpace(split[0])
 		place.Department = strings.TrimSpace(split[1])

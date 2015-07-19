@@ -6,7 +6,12 @@
 <div>
 	<form action="/">
 		{{range .Places}}
-		<input type="checkbox" name="placeID" value="{{.ID}}">{{.City}}{{if .Department}} / {{.Department}}{{else}}, {{.Arrondissement}}{{end}}
+		<input type="checkbox" name="placeID" value="{{.ID}}">
+		{{if .City}}
+		{{.City}}{{if .Department}} / {{.Department}}{{else}}, {{.Arrondissement}}{{end}}
+		{{else}}
+		{{.Department}}
+		{{end}}
 		{{end}}
 		<br><input type="submit" value="Filter">
 	</form>
@@ -22,7 +27,13 @@
 		{{$place := index $places .PlaceID}}
 		{{$departement := $place.Department}}
 		{{$arrondissement := $place.Arrondissement}}
-		<a href="/?placeID={{.PlaceID}}">{{$place.City}}{{if $departement}} / {{$departement}}{{else}}, {{$arrondissement}}{{end}}</a>
+		<a href="/?placeID={{.PlaceID}}">
+			{{if $place.City}}
+			{{$place.City}}{{if $place.Department}} / {{$place.Department}}{{else}}, {{$place.Arrondissement}}{{end}}
+			{{else}}
+			{{$place.Department}}
+			{{end}}
+		</a>
 		{{if .Price}}<br><strong>{{.Price}}</strong>{{end}}
 	</div>
 	{{end}}
