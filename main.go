@@ -75,12 +75,10 @@ func init() {
 type Handler struct{}
 
 func NewHandler() *Handler {
-	h := Handler{}
-	go h.poll()
-	return &h
+	return &Handler{}
 }
 
-func (h *Handler) poll() {
+func poll() {
 	for {
 		doc, err := fetch()
 		if err != nil {
@@ -198,6 +196,7 @@ func main() {
 	}
 	log.Printf("Listening on port %v", port)
 
+	go poll()
 	h := NewHandler()
 	log.Fatal(http.ListenAndServe(":"+port, h))
 }
