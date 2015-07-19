@@ -171,7 +171,9 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 		places[a.PlaceID] = place
 	}
 	sort.Sort(ByDate(ann))
-	ann = ann[:35]
+	if len(ann) > 35 {
+		ann = ann[:35]
+	}
 
 	data := struct {
 		Announces []Announce
