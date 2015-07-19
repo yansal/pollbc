@@ -72,12 +72,6 @@ func init() {
 
 }
 
-type Handler struct{}
-
-func NewHandler() *Handler {
-	return &Handler{}
-}
-
 func poll() {
 	for {
 		doc, err := fetch()
@@ -139,7 +133,7 @@ func poll() {
 	}
 }
 
-func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func serveHTTP(w http.ResponseWriter, r *http.Request) {
 	var ann []Announce
 	var err error
 	q := map[string][]string(r.URL.Query())
@@ -197,6 +191,5 @@ func main() {
 	log.Printf("Listening on port %v", port)
 
 	go poll()
-	h := NewHandler()
-	log.Fatal(http.ListenAndServe(":"+port, h))
+	log.Fatal(http.ListenAndServe(":"+port, http.HandlerFunc(serveHTTP)))
 }
