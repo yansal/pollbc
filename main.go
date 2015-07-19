@@ -135,62 +135,70 @@ func poll() {
 
 func serveHTTP(w http.ResponseWriter, r *http.Request) {
 	var ann []Announce
-	var err error
+	var departments []string
+	places := make(map[int]Place)
+
 	q := map[string][]string(r.URL.Query())
+	placeIDsQuery := q["placeID"]
+	departmentsQuery := q["department"]
 
-	placeIDs := make([]int, 0)
-	if departments, ok := q["department"]; ok {
-		for _, department := range departments {
-			ids, err := selectIDFromPlacesWhereDepartment(db, department)
-			if err != nil {
-				log.Print(err)
-			}
-			placeIDs = append(placeIDs, ids...)
-		}
-	}
-
-	if placeIDsQuery, ok := q["placeID"]; ok {
+	if placeIDsQuery != nil {
+		departments := make(map[string]struct{})
 		for _, placeID := range placeIDsQuery {
 			placeID, err := strconv.Atoi(placeID)
 			if err != nil {
 				log.Print(err)
 			}
-			placeIDs = append(placeIDs, placeID)
-		}
-	}
-
-	if len(placeIDs) != 0 {
-		for _, placeID := range placeIDs {
+			dpt, err := selectDepartmentWhereID(db, placeID)
+			if err != nil {
+				log.Print(err)
+			}
+			departments[dpt] = struct{}{}
 			newAnn, err := selectAnnouncesWherePlaceID(db, placeID)
 			if err != nil {
 				log.Print(err)
 			}
 			ann = append(ann, newAnn...)
 		}
+		for dpt := range departments {
+			departmentPlaces, err := selectPlacesWhereDepartment(db, dpt)
+			if err != nil {
+				log.Print(err)
+			}
+			for id, place := range departmentPlaces {
+				places[id] = place
+			}
+		}
+	} else if departmentsQuery != nil {
+		for _, department := range departmentsQuery {
+			departmentPlaces, err := selectPlacesWhereDepartment(db, department)
+			if err != nil {
+				log.Print(err)
+			}
+			for id, place := range departmentPlaces {
+				places[id] = place
+				newAnn, err := selectAnnouncesWherePlaceID(db, id)
+				if err != nil {
+					log.Print(err)
+				}
+				ann = append(ann, newAnn...)
+			}
+		}
 	} else {
+		var err error
 		ann, err = selectAnnounces(db)
 		if err != nil {
 			log.Print(err)
 		}
-	}
-
-	places := make(map[int]Place)
-	for _, a := range ann {
-		_, ok := places[a.PlaceID]
-		if ok {
-			continue
-		}
-		place, err := selectPlace(db, a.PlaceID)
+		departments, err = selectDistinctDepartmentFromPlaces(db)
 		if err != nil {
 			log.Print(err)
-			continue
 		}
-		places[a.PlaceID] = place
-	}
-
-	departments := make(map[string]struct{})
-	for _, place := range places {
-		departments[place.Department] = struct{}{}
+		sort.Strings(departments)
+		places, err = selectPlaces(db)
+		if err != nil {
+			log.Print(err)
+		}
 	}
 
 	sort.Sort(ByDate(ann))
@@ -201,10 +209,10 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		Announces   []Announce
 		Places      map[int]Place
-		Departments map[string]struct{}
+		Departments []string
 	}{ann, places, departments}
 	t := template.Must(template.ParseFiles("template.html"))
-	err = t.Execute(w, data)
+	err := t.Execute(w, data)
 	if err != nil {
 		log.Print(err)
 	}

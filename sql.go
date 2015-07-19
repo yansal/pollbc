@@ -37,48 +37,66 @@ func selectIDFromPlaces(db *sql.DB, place Place) (id int, err error) {
 	return id, err
 }
 
-func selectIDFromPlacesWhereCity(db *sql.DB, city string) ([]int, error) {
-	rows, err := db.Query("SELECT id FROM pollbc_places WHERE city=$1", city)
+func selectDistinctDepartmentFromPlaces(db *sql.DB) ([]string, error) {
+	rows, err := db.Query("SELECT DISTINCT department FROM pollbc_places")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	ids := make([]int, 0)
+	departments := make([]string, 0)
 	for rows.Next() {
-		var id int
-		err := rows.Scan(&id)
+		var department string
+		err := rows.Scan(&department)
 		if err != nil {
-			return ids, err
+			return departments, err
 		}
-		ids = append(ids, id)
+		departments = append(departments, department)
 	}
 	if err := rows.Err(); err != nil {
-		return ids, err
+		return departments, err
 	}
-	return ids, nil
+	return departments, nil
 }
 
-func selectIDFromPlacesWhereDepartment(db *sql.DB, department string) ([]int, error) {
-	rows, err := db.Query("SELECT id FROM pollbc_places WHERE department=$1", department)
+func selectDepartmentWhereID(db *sql.DB, id int) (dpt string, err error) {
+	err = db.QueryRow("SELECT department FROM pollbc_places WHERE id=$1", id).Scan(&dpt)
+	return dpt, err
+}
+
+func selectPlaces(db *sql.DB) (map[int]Place, error) {
+	rows, err := db.Query("SELECT * FROM pollbc_places")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
+	return scanPlaces(rows)
+}
 
-	ids := make([]int, 0)
+func selectPlacesWhereDepartment(db *sql.DB, department string) (map[int]Place, error) {
+	rows, err := db.Query("SELECT * FROM pollbc_places WHERE department=$1", department)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return scanPlaces(rows)
+}
+
+func scanPlaces(rows *sql.Rows) (map[int]Place, error) {
+	places := make(map[int]Place)
 	for rows.Next() {
-		var id int
-		err := rows.Scan(&id)
+		place := Place{}
+		err := rows.Scan(&place.ID, &place.City, &place.Department, &place.Arrondissement)
 		if err != nil {
-			return ids, err
+			return places, err
 		}
-		ids = append(ids, id)
+
+		places[place.ID] = place
 	}
 	if err := rows.Err(); err != nil {
-		return ids, err
+		return places, err
 	}
-	return ids, nil
+	return places, nil
 }
 
 func hasAnnounce(db *sql.DB, id string) (bool, error) {
@@ -133,11 +151,4 @@ func scanAnnounces(rows *sql.Rows) ([]Announce, error) {
 		return ann, err
 	}
 	return ann, nil
-}
-
-func selectPlace(db *sql.DB, id int) (Place, error) {
-	place := Place{}
-	err := db.QueryRow("SELECT * FROM pollbc_places WHERE id=$1", id).
-		Scan(&place.ID, &place.City, &place.Department, &place.Arrondissement)
-	return place, err
 }

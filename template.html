@@ -3,12 +3,26 @@
 <title>pollbc</title>
 </head>
 
+{{if .Departments}}
 <form action="/">
-	{{range $dep, $nil := .Departments}}
+	{{range $dep := .Departments}}
 	<input type="checkbox" name="department" value="{{$dep}}">{{$dep}}
 	{{end}}
 	<br><input type="submit" value="Filter by department">
 </form>
+{{else}}
+<form action="/">
+	{{range $key, $place := .Places}}
+	<input type="checkbox" name="placeID" value="{{$key}}">
+	{{if $place.City}}
+	{{$place.City}}
+	{{else if $place.Arrondissement}}
+	{{$place.Department}} {{$place.Arrondissement}}
+	{{end}}
+	{{end}}
+	<br><input type="submit" value="Filter by place">
+</form>
+{{end}}
 
 {{$places := .Places}}
 <div>
@@ -20,8 +34,6 @@
 		<a href={{.ID}}>{{.Title}}</a> 
 		<br>
 		{{$place := index $places .PlaceID}}
-		{{$departement := $place.Department}}
-		{{$arrondissement := $place.Arrondissement}}
 		<a href="/?placeID={{.PlaceID}}">
 			{{if $place.City}}
 			{{$place.City}} / {{$place.Department}}
