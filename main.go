@@ -137,23 +137,46 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 	var ann []Announce
 	var err error
 	q := map[string][]string(r.URL.Query())
-	placeIDs, ok := q["placeID"]
-	if !ok {
-		ann, err = selectAnnounces(db)
-		if err != nil {
-			log.Print(err)
+
+	placeIDs := make([]int, 0)
+	if departments, ok := q["department"]; ok {
+		for _, department := range departments {
+			var err error
+			var ids []int
+			if department == "Paris" {
+				ids, err = selectIDFromPlacesWhereCity(db, department)
+			} else {
+				ids, err = selectIDFromPlacesWhereDepartment(db, department)
+			}
+			if err != nil {
+				log.Print(err)
+			}
+			placeIDs = append(placeIDs, ids...)
 		}
-	} else {
-		for _, placeID := range placeIDs {
+	}
+
+	if placeIDsQuery, ok := q["placeID"]; ok {
+		for _, placeID := range placeIDsQuery {
 			placeID, err := strconv.Atoi(placeID)
 			if err != nil {
 				log.Print(err)
 			}
+			placeIDs = append(placeIDs, placeID)
+		}
+	}
+
+	if len(placeIDs) != 0 {
+		for _, placeID := range placeIDs {
 			newAnn, err := selectAnnouncesWherePlaceID(db, placeID)
 			if err != nil {
 				log.Print(err)
 			}
 			ann = append(ann, newAnn...)
+		}
+	} else {
+		ann, err = selectAnnounces(db)
+		if err != nil {
+			log.Print(err)
 		}
 	}
 
@@ -170,15 +193,26 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		places[a.PlaceID] = place
 	}
+
+	departments := make(map[string]struct{})
+	for _, place := range places {
+		if place.Department == "" {
+			departments["Paris"] = struct{}{}
+		} else {
+			departments[place.Department] = struct{}{}
+		}
+	}
+
 	sort.Sort(ByDate(ann))
 	if len(ann) > 35 {
 		ann = ann[:35]
 	}
 
 	data := struct {
-		Announces []Announce
-		Places    map[int]Place
-	}{ann, places}
+		Announces   []Announce
+		Places      map[int]Place
+		Departments map[string]struct{}
+	}{ann, places, departments}
 	t := template.Must(template.ParseFiles("template.html"))
 	err = t.Execute(w, data)
 	if err != nil {

@@ -2,6 +2,15 @@
 <head>
 <title>pollbc</title>
 </head>
+
+<form action="/">
+	{{range $dep, $nil := .Departments}}
+	<input type="checkbox" name="department" value="{{$dep}}">{{$dep}}
+	{{end}}
+	<br><input type="submit" value="Filter by department">
+</form>
+<hr>
+
 {{$places := .Places}}
 <div>
 	<form action="/">

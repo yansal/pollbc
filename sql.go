@@ -37,6 +37,50 @@ func selectIDFromPlaces(db *sql.DB, place Place) (id int, err error) {
 	return id, err
 }
 
+func selectIDFromPlacesWhereCity(db *sql.DB, city string) ([]int, error) {
+	rows, err := db.Query("SELECT id FROM pollbc_places WHERE city=$1", city)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	ids := make([]int, 0)
+	for rows.Next() {
+		var id int
+		err := rows.Scan(&id)
+		if err != nil {
+			return ids, err
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		return ids, err
+	}
+	return ids, nil
+}
+
+func selectIDFromPlacesWhereDepartment(db *sql.DB, department string) ([]int, error) {
+	rows, err := db.Query("SELECT id FROM pollbc_places WHERE department=$1", department)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	ids := make([]int, 0)
+	for rows.Next() {
+		var id int
+		err := rows.Scan(&id)
+		if err != nil {
+			return ids, err
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		return ids, err
+	}
+	return ids, nil
+}
+
 func hasAnnounce(db *sql.DB, id string) (bool, error) {
 	err := db.QueryRow("SELECT id FROM pollbc_announces WHERE id=$1", id).Scan(&id)
 	if err == sql.ErrNoRows {
