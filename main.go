@@ -141,13 +141,7 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 	placeIDs := make([]int, 0)
 	if departments, ok := q["department"]; ok {
 		for _, department := range departments {
-			var err error
-			var ids []int
-			if department == "Paris" {
-				ids, err = selectIDFromPlacesWhereCity(db, department)
-			} else {
-				ids, err = selectIDFromPlacesWhereDepartment(db, department)
-			}
+			ids, err := selectIDFromPlacesWhereDepartment(db, department)
 			if err != nil {
 				log.Print(err)
 			}
@@ -196,11 +190,7 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 
 	departments := make(map[string]struct{})
 	for _, place := range places {
-		if place.Department == "" {
-			departments["Paris"] = struct{}{}
-		} else {
-			departments[place.Department] = struct{}{}
-		}
+		departments[place.Department] = struct{}{}
 	}
 
 	sort.Sort(ByDate(ann))

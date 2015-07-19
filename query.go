@@ -179,7 +179,7 @@ func queryPlace(n *html.Node) (Place, error) {
 		case 1:
 			place.Department = fields[0]
 		case 2:
-			place.City = fields[0]
+			place.Department = fields[0]
 			place.Arrondissement = fields[1]
 		default:
 			return place, fmt.Errorf("queryPlace: can't parse %v", fields)

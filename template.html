@@ -9,22 +9,8 @@
 	{{end}}
 	<br><input type="submit" value="Filter by department">
 </form>
-<hr>
 
 {{$places := .Places}}
-<div>
-	<form action="/">
-		{{range .Places}}
-		<input type="checkbox" name="placeID" value="{{.ID}}">
-		{{if .City}}
-		{{.City}}{{if .Department}} / {{.Department}}{{else}} {{.Arrondissement}}{{end}}
-		{{else}}
-		{{.Department}}
-		{{end}}
-		{{end}}
-		<br><input type="submit" value="Filter">
-	</form>
-</div>
 <div>
 	{{range .Announces}}
 	<div>
@@ -38,7 +24,9 @@
 		{{$arrondissement := $place.Arrondissement}}
 		<a href="/?placeID={{.PlaceID}}">
 			{{if $place.City}}
-			{{$place.City}}{{if $place.Department}} / {{$place.Department}}{{else}} {{$place.Arrondissement}}{{end}}
+			{{$place.City}} / {{$place.Department}}
+			{{else if $place.Arrondissement}}
+			{{$place.Department}} {{$place.Arrondissement}}
 			{{else}}
 			{{$place.Department}}
 			{{end}}
