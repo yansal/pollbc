@@ -36,15 +36,13 @@
 		<a href={{.ID}}>{{.Title}}</a> 
 		<br>
 		{{$place := index $places .PlaceID}}
-		<a href="/?placeID={{.PlaceID}}">
-			{{if $place.City}}
-			{{$place.City}} / {{$place.Department}}
-			{{else if $place.Arrondissement}}
-			{{$place.Department}} {{$place.Arrondissement}}
-			{{else}}
-			{{$place.Department}}
-			{{end}}
-		</a>
+		{{if $place.City}}
+		<a href="/?placeID={{.PlaceID}}">{{$place.City}}</a> / <a href="/?department={{$place.Department}}">{{$place.Department}}</a>
+		{{else if $place.Arrondissement}}
+		<a href="/?department={{$place.Department}}">{{$place.Department}}</a> <a href="/?placeID={{.PlaceID}}">{{$place.Arrondissement}}</a>
+		{{else}}
+		<a href="/?department={{$place.Department}}">{{$place.Department}}</a>
+		{{end}}
 		{{if .Price}}<br><strong>{{.Price}}</strong>{{end}}
 	</div>
 	{{end}}
