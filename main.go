@@ -97,6 +97,18 @@ func poll() {
 	}
 }
 
+func deleteOldAnnounces() {
+	for {
+		deleted, err := models.DeleteAnnounces()
+		if err != nil {
+			log.Print(err)
+		}
+		if deleted != 0 {
+			log.Printf("Number of old announces deleted:\t%d\n", deleted)
+		}
+		time.Sleep(time.Minute)
+	}
+}
 func serveHTTP(w http.ResponseWriter, r *http.Request) {
 	var ann []models.Announce
 	var departments []string
@@ -191,5 +203,6 @@ func main() {
 	log.Printf("Listening on port %v", port)
 
 	go poll()
+	go deleteOldAnnounces()
 	log.Fatal(http.ListenAndServe(":"+port, http.HandlerFunc(serveHTTP)))
 }

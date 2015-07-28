@@ -78,3 +78,11 @@ func scanAnnounces(rows *sql.Rows) ([]Announce, error) {
 	}
 	return ann, nil
 }
+
+func DeleteAnnounces() (int64, error) {
+	res, err := db.Exec("DELETE FROM pollbc_announces WHERE date < NOW() - interval '1 week'")
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}
