@@ -3,26 +3,28 @@
 	<title>pollbc</title>
 </head>
 
-{{if .Departments}}
 <form action="/">
-	{{range $dep := .Departments}}
-	<input type="checkbox" name="department" value="{{$dep}}">{{$dep}}
+	{{if .Departments}}
+	<select name="department">
+		{{range $dep := .Departments}}
+		<option value="{{$dep}}">{{$dep}}</option>
+		{{end}}
+	</select>
+	{{else}}
+	<select name="placeID">
+		{{range $key, $place := .Places}}
+		<option value="{{$key}}">
+		{{if $place.City}}
+		{{$place.City}}
+		{{else if $place.Arrondissement}}
+		{{$place.Department}} {{$place.Arrondissement}}
+		{{end}}
+		</option>
+		{{end}}
+	</select>
 	{{end}}
-	<br><input type="submit" value="Filter by department">
+	<input type="submit" value="Filter">
 </form>
-{{else}}
-<form action="/">
-	{{range $key, $place := .Places}}
-	<input type="checkbox" name="placeID" value="{{$key}}">
-	{{if $place.City}}
-	{{$place.City}}
-	{{else if $place.Arrondissement}}
-	{{$place.Department}} {{$place.Arrondissement}}
-	{{end}}
-	{{end}}
-	<br><input type="submit" value="Filter by place">
-</form>
-{{end}}
 
 {{$places := .Places}}
 {{$loc := .Location}}
