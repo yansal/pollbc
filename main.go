@@ -112,7 +112,8 @@ func deleteOldAnnounces() {
 func serveHTTP(w http.ResponseWriter, r *http.Request) {
 	var ann []models.Announce
 	var departments []string
-	places := make(map[int]models.Place)
+	var places []models.Place
+	placesMap := make(map[int]models.Place)
 
 	q := map[string][]string(r.URL.Query())
 	placeIDsQuery := q["placeID"]
@@ -141,19 +142,19 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				log.Print(err)
 			}
-			for id, place := range departmentPlaces {
-				places[id] = place
+			for _, place := range departmentPlaces {
+				places = append(places, place)
 			}
 		}
 	} else if departmentsQuery != nil {
 		for _, department := range departmentsQuery {
-			departmentPlaces, err := models.SelectPlacesWhereDepartment(department)
+			var err error
+			places, err = models.SelectPlacesWhereDepartment(department)
 			if err != nil {
 				log.Print(err)
 			}
-			for id, place := range departmentPlaces {
-				places[id] = place
-				newAnn, err := models.SelectAnnouncesWherePlaceID(id)
+			for _, place := range places {
+				newAnn, err := models.SelectAnnouncesWherePlaceID(place.ID)
 				if err != nil {
 					log.Print(err)
 				}
@@ -182,12 +183,22 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 		ann = ann[:35]
 	}
 
+	if places[0].City != "" {
+		sort.Sort(models.ByCity(places))
+	} else {
+		sort.Sort(models.ByArrondissement(places))
+	}
+	for _, p := range places {
+		placesMap[p.ID] = p
+	}
+
 	data := struct {
 		Announces   []models.Announce
-		Places      map[int]models.Place
+		Map         map[int]models.Place
 		Departments []string
+		Places      []models.Place
 		Location    *time.Location
-	}{ann, places, departments, paris}
+	}{ann, placesMap, departments, places, paris}
 	t := template.Must(template.ParseFiles("template.html"))
 	err := t.Execute(w, data)
 	if err != nil {

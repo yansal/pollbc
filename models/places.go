@@ -1,12 +1,49 @@
 package models
 
-import "database/sql"
+import (
+	"database/sql"
+	"log"
+	"strconv"
+	"unicode"
+)
 
 type Place struct {
 	ID             int
 	City           string
 	Department     string
 	Arrondissement string
+}
+
+type ByCity []Place
+
+func (d ByCity) Len() int           { return len(d) }
+func (d ByCity) Swap(i, j int)      { d[i], d[j] = d[j], d[i] }
+func (d ByCity) Less(i, j int) bool { return d[i].City < d[j].City }
+
+type ByArrondissement []Place
+
+func (d ByArrondissement) Len() int      { return len(d) }
+func (d ByArrondissement) Swap(i, j int) { d[i], d[j] = d[j], d[i] }
+func (d ByArrondissement) Less(i, j int) bool {
+	ai, err := toInt(d[i].Arrondissement)
+	if err != nil {
+		log.Print(err)
+	}
+	aj, err := toInt(d[j].Arrondissement)
+	if err != nil {
+		log.Print(err)
+	}
+	return ai < aj
+}
+
+func toInt(s string) (int, error) {
+	for i, v := range s {
+		if !unicode.IsDigit(v) {
+			s = s[:i]
+			break
+		}
+	}
+	return strconv.Atoi(s)
 }
 
 func CreateTablePlaces() error {
@@ -66,7 +103,7 @@ func SelectDepartmentWhereID(id int) (dpt string, err error) {
 	return dpt, err
 }
 
-func SelectPlaces() (map[int]Place, error) {
+func SelectPlaces() ([]Place, error) {
 	rows, err := db.Query("SELECT * FROM pollbc_places")
 	if err != nil {
 		return nil, err
@@ -75,7 +112,7 @@ func SelectPlaces() (map[int]Place, error) {
 	return scanPlaces(rows)
 }
 
-func SelectPlacesWhereDepartment(department string) (map[int]Place, error) {
+func SelectPlacesWhereDepartment(department string) ([]Place, error) {
 	rows, err := db.Query("SELECT * FROM pollbc_places WHERE department=$1", department)
 	if err != nil {
 		return nil, err
@@ -84,8 +121,8 @@ func SelectPlacesWhereDepartment(department string) (map[int]Place, error) {
 	return scanPlaces(rows)
 }
 
-func scanPlaces(rows *sql.Rows) (map[int]Place, error) {
-	places := make(map[int]Place)
+func scanPlaces(rows *sql.Rows) ([]Place, error) {
+	var places []Place
 	for rows.Next() {
 		place := Place{}
 		err := rows.Scan(&place.ID, &place.City, &place.Department, &place.Arrondissement)
@@ -93,7 +130,7 @@ func scanPlaces(rows *sql.Rows) (map[int]Place, error) {
 			return places, err
 		}
 
-		places[place.ID] = place
+		places = append(places, place)
 	}
 	if err := rows.Err(); err != nil {
 		return places, err

@@ -12,13 +12,13 @@
 	</select>
 	{{else}}
 	<select name="placeID">
-		{{range $key, $place := .Places}}
+		{{range $place := .Places}}
 		{{if $place.City}}
-		<option value="{{$key}}">
+		<option value="{{$place.ID}}">
 		{{$place.City}}
 		</option>
 		{{else if $place.Arrondissement}}
-		<option value="{{$key}}">
+		<option value="{{$place.ID}}">
 		{{$place.Department}} {{$place.Arrondissement}}
 		</option>
 		{{end}}
@@ -28,7 +28,7 @@
 	<input type="submit" value="Filter">
 </form>
 
-{{$places := .Places}}
+{{$map := .Map}}
 {{$loc := .Location}}
 <div>
 	{{range .Announces}}
@@ -39,7 +39,7 @@
 		<br>
 		<a href={{.ID}}>{{.Title}}</a> 
 		<br>
-		{{$place := index $places .PlaceID}}
+		{{$place := index $map .PlaceID}}
 		{{if $place.City}}
 		<a href="/?placeID={{.PlaceID}}">{{$place.City}}</a> / <a href="/?department={{$place.Department}}">{{$place.Department}}</a>
 		{{else if $place.Arrondissement}}
