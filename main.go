@@ -215,5 +215,9 @@ func main() {
 
 	go poll()
 	go deleteOldAnnounces()
-	log.Fatal(http.ListenAndServe(":"+port, http.HandlerFunc(serveHTTP)))
+
+	http.Handle("/css/", http.FileServer(http.Dir("static")))
+	http.Handle("/js/", http.FileServer(http.Dir("static")))
+	http.HandleFunc("/", serveHTTP)
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

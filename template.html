@@ -1,53 +1,73 @@
-<!doctype html>
-<head>
-	<title>pollbc</title>
-</head>
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
 
-<form action="/">
-	{{if .Departments}}
-	<select name="department">
-		{{range $dep := .Departments}}
-		<option value="{{$dep}}">{{$dep}}</option>
-		{{end}}
-	</select>
-	{{else}}
-	<select name="placeID">
-		{{range $place := .Places}}
-		{{if $place.City}}
-		<option value="{{$place.ID}}">
-		{{$place.City}}
-		</option>
-		{{else if $place.Arrondissement}}
-		<option value="{{$place.ID}}">
-		{{$place.Department}} {{$place.Arrondissement}}
-		</option>
-		{{end}}
-		{{end}}
-	</select>
-	{{end}}
-	<input type="submit" value="Filter">
-</form>
+		<title>pollbc</title>
 
-{{$map := .Map}}
-{{$loc := .Location}}
-<div>
-	{{range .Announces}}
-	<div>
-		<hr>
-		{{$fetched := .Fetched.In $loc}}
-		{{.Date.Format "Monday January 2 15:04"}} (fetched at {{$fetched.Format "15:04"}})
-		<br>
-		<a href={{.ID}}>{{.Title}}</a> 
-		<br>
-		{{$place := index $map .PlaceID}}
-		{{if $place.City}}
-		<a href="/?placeID={{.PlaceID}}">{{$place.City}}</a> / <a href="/?department={{$place.Department}}">{{$place.Department}}</a>
-		{{else if $place.Arrondissement}}
-		<a href="/?department={{$place.Department}}">{{$place.Department}}</a> <a href="/?placeID={{.PlaceID}}">{{$place.Arrondissement}}</a>
-		{{else}}
-		<a href="/?department={{$place.Department}}">{{$place.Department}}</a>
-		{{end}}
-		{{if .Price}}<br><strong>{{.Price}}</strong>{{end}}
-	</div>
-	{{end}}
-</div>
+		<link href="css/bootstrap.min.css" rel="stylesheet">
+	</head>
+
+	<body>
+		<div class="navbar">
+			<div class="container">
+				<div class="navbar-header">
+					<a class="navbar-brand" href="/">pollbc</a>
+				</div>
+				<form class="navbar-form" action="/">
+					{{if .Departments}}
+					<select class="form-control" name="department">
+						{{range $dep := .Departments}}
+						<option value="{{$dep}}">{{$dep}}</option>
+						{{end}}
+					</select>
+					{{else}}
+					<select class="form-control" name="placeID">
+						{{range $place := .Places}}
+						{{if $place.City}}
+						<option value="{{$place.ID}}">
+						{{$place.City}}
+						</option>
+						{{else if $place.Arrondissement}}
+						<option value="{{$place.ID}}">
+						{{$place.Department}} {{$place.Arrondissement}}
+						</option>
+						{{end}}
+						{{end}}
+					</select>
+					{{end}}
+					<button class="btn btn-default" type="submit">Filter</button>
+				</form>
+			</div>
+		</div>
+
+		{{$map := .Map}}
+		{{$loc := .Location}}
+		<div class="container">
+			{{range .Announces}}
+			<div>
+				<hr>
+				{{$fetched := .Fetched.In $loc}}
+				{{.Date.Format "Monday January 2 15:04"}} (fetched at {{$fetched.Format "15:04"}})
+				<br>
+				<a href={{.ID}}>{{.Title}}</a> 
+				<br>
+				{{$place := index $map .PlaceID}}
+				{{if $place.City}}
+				<a href="/?placeID={{.PlaceID}}">{{$place.City}}</a> / <a href="/?department={{$place.Department}}">{{$place.Department}}</a>
+				{{else if $place.Arrondissement}}
+				<a href="/?department={{$place.Department}}">{{$place.Department}}</a> <a href="/?placeID={{.PlaceID}}">{{$place.Arrondissement}}</a>
+				{{else}}
+				<a href="/?department={{$place.Department}}">{{$place.Department}}</a>
+				{{end}}
+				{{if .Price}}<br><strong>{{.Price}}</strong>{{end}}
+			</div>
+			{{end}}
+		</div>
+
+		<script src="js/jquery-1.11.3.min.js"></script>
+		<script src="js/bootstrap.min.js"></script>
+	</body>
+</html>
