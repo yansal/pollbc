@@ -14,13 +14,17 @@ import (
 
 func init() {
 	models.InitDB(os.Getenv("DATABASE_URL"))
+
 	var err error
-	err = models.CreateTableAnnounces()
+	err = models.CreateTableDepartements()
 	if err != nil {
 		log.Print(err)
 	}
-
 	err = models.CreateTablePlaces()
+	if err != nil {
+		log.Print(err)
+	}
+	err = models.CreateTableAnnounces()
 	if err != nil {
 		log.Print(err)
 	}
@@ -48,13 +52,29 @@ func poll() {
 
 		count := 0
 		for _, n := range nodes {
-			place, err := queryPlace(n)
+			place, dpt, err := queryPlace(n)
 			if err != nil {
 				log.Print(err)
 				continue
 			}
 
-			ok, err := models.HasPlace(place)
+			var ok bool
+			ok, err = models.HasDepartment(dpt)
+			if err != nil {
+				log.Print(err)
+			} else if !ok {
+				err := models.InsertDepartment(dpt)
+				if err != nil {
+					log.Print(err)
+				}
+			}
+			dptID, err := models.SelectIDFromDepartment(dpt)
+			if err != nil {
+				log.Print(err)
+			}
+			place.DepartmentID = dptID
+
+			ok, err = models.HasPlace(place)
 			if err != nil {
 				log.Print(err)
 			} else if !ok {
@@ -109,36 +129,42 @@ func deleteOldAnnounces() {
 		time.Sleep(time.Minute)
 	}
 }
+
 func serveHTTP(w http.ResponseWriter, r *http.Request) {
 	var ann []models.Announce
-	var departments []string
+	var departments []models.Department
 	var places []models.Place
+	dptMap := make(map[int]models.Department)
 	placesMap := make(map[int]models.Place)
+	printDpts := false
 
 	q := map[string][]string(r.URL.Query())
 	placeIDsQuery := q["placeID"]
-	departmentsQuery := q["department"]
+	departmentIDsQuery := q["departmentID"]
 
 	if placeIDsQuery != nil {
-		departments := make(map[string]struct{})
 		for _, placeID := range placeIDsQuery {
 			placeID, err := strconv.Atoi(placeID)
 			if err != nil {
 				log.Print(err)
 			}
-			dpt, err := models.SelectDepartmentWhereID(placeID)
+			dptID, err := models.SelectDepartmentIDWhereID(placeID)
 			if err != nil {
 				log.Print(err)
 			}
-			departments[dpt] = struct{}{}
+			dpt, err := models.SelectDepartmentWhereID(dptID)
+			if err != nil {
+				log.Print(err)
+			}
+			departments = append(departments, dpt)
 			newAnn, err := models.SelectAnnouncesWherePlaceID(placeID)
 			if err != nil {
 				log.Print(err)
 			}
 			ann = append(ann, newAnn...)
 		}
-		for dpt := range departments {
-			departmentPlaces, err := models.SelectPlacesWhereDepartment(dpt)
+		for _, dpt := range departments {
+			departmentPlaces, err := models.SelectPlacesWhereDepartmentID(dpt.ID)
 			if err != nil {
 				log.Print(err)
 			}
@@ -146,10 +172,18 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 				places = append(places, place)
 			}
 		}
-	} else if departmentsQuery != nil {
-		for _, department := range departmentsQuery {
-			var err error
-			places, err = models.SelectPlacesWhereDepartment(department)
+	} else if departmentIDsQuery != nil {
+		for _, dptID := range departmentIDsQuery {
+			dptID, err := strconv.Atoi(dptID)
+			if err != nil {
+				log.Print(err)
+			}
+			dpt, err := models.SelectDepartmentWhereID(dptID)
+			if err != nil {
+				log.Print(err)
+			}
+			departments = append(departments, dpt)
+			places, err = models.SelectPlacesWhereDepartmentID(dptID)
 			if err != nil {
 				log.Print(err)
 			}
@@ -162,16 +196,17 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	} else {
+		printDpts = true
 		var err error
 		ann, err = models.SelectAnnounces()
 		if err != nil {
 			log.Print(err)
 		}
-		departments, err = models.SelectDistinctDepartmentFromPlaces()
+		departments, err = models.SelectDepartments()
 		if err != nil {
 			log.Print(err)
 		}
-		sort.Strings(departments)
+		sort.Sort(models.ByName(departments))
 		places, err = models.SelectPlaces()
 		if err != nil {
 			log.Print(err)
@@ -188,17 +223,22 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 	} else {
 		sort.Sort(models.ByArrondissement(places))
 	}
+	for _, d := range departments {
+		dptMap[d.ID] = d
+	}
 	for _, p := range places {
 		placesMap[p.ID] = p
 	}
 
 	data := struct {
-		Announces   []models.Announce
-		Map         map[int]models.Place
-		Departments []string
+		Departments []models.Department
 		Places      []models.Place
+		Announces   []models.Announce
+		DptMap      map[int]models.Department
+		PlaceMap    map[int]models.Place
 		Location    *time.Location
-	}{ann, placesMap, departments, places, paris}
+		PrintDpts   bool
+	}{departments, places, ann, dptMap, placesMap, paris, printDpts}
 	t := template.Must(template.ParseFiles("template.html"))
 	err := t.Execute(w, data)
 	if err != nil {

@@ -148,7 +148,7 @@ func queryDate(n *html.Node) time.Time {
 	return time.Date(y, mon, d, h, min, 0, 0, time.Local)
 }
 
-func queryPlace(n *html.Node) (models.Place, error) {
+func queryPlace(n *html.Node) (models.Place, models.Department, error) {
 	var placeNode *html.Node
 	var f func(*html.Node)
 	f = func(n *html.Node) {
@@ -166,9 +166,10 @@ func queryPlace(n *html.Node) (models.Place, error) {
 	}
 	f(n)
 	place := models.Place{}
+	dpt := models.Department{}
 	if placeNode == nil {
 		// TODO render node
-		return place, errors.New("queryPlace: can't find <div class=placement> in html node")
+		return place, dpt, errors.New("queryPlace: can't find <div class=placement> in html node")
 	}
 
 	placeString := strings.Join(strings.Fields(strings.TrimSpace(placeNode.FirstChild.Data)), " ")
@@ -178,26 +179,26 @@ func queryPlace(n *html.Node) (models.Place, error) {
 		fields := strings.Fields(split[0])
 		switch len(fields) {
 		case 1:
-			place.Department = fields[0]
+			dpt.Name = fields[0]
 		case 2:
-			place.Department = fields[0]
+			dpt.Name = fields[0]
 			place.Arrondissement = fields[1]
 		default:
-			return place, fmt.Errorf("queryPlace: can't parse %v", fields)
+			return place, dpt, fmt.Errorf("queryPlace: can't parse %v", fields)
 		}
 	case 2:
 		place.City = strings.TrimSpace(split[0])
-		place.Department = strings.TrimSpace(split[1])
+		dpt.Name = strings.TrimSpace(split[1])
 		if place.City == "" {
-			return place, fmt.Errorf("queryPlace: city is null string in %v", split)
+			return place, dpt, fmt.Errorf("queryPlace: city is null string in %v", split)
 		}
-		if place.Department == "" {
-			return place, fmt.Errorf("queryPlace: department is null string in %v", split)
+		if dpt.Name == "" {
+			return place, dpt, fmt.Errorf("queryPlace: department is null string in %v", split)
 		}
 	default:
-		return place, fmt.Errorf("queryPlace: can't parse %v", split)
+		return place, dpt, fmt.Errorf("queryPlace: can't parse %v", split)
 	}
-	return place, nil
+	return place, dpt, nil
 }
 
 func queryPrice(n *html.Node) string {

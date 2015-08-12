@@ -11,9 +11,9 @@ type Announce struct {
 	Price string
 	Title string
 
-	PlaceID int
-
 	Fetched time.Time
+
+	PlaceID int
 }
 
 type ByDate []Announce
@@ -23,7 +23,7 @@ func (d ByDate) Swap(i, j int)      { d[i], d[j] = d[j], d[i] }
 func (d ByDate) Less(i, j int) bool { return d[i].Date.After(d[j].Date) }
 
 func CreateTableAnnounces() error {
-	_, err := db.Exec("CREATE TABLE pollbc_announces (id varchar PRIMARY KEY, date timestamp with time zone, price varchar, placeID serial, title varchar, fetched timestamp with time zone)")
+	_, err := db.Exec("CREATE TABLE pollbc_announces (id varchar PRIMARY KEY, date timestamp with time zone, price varchar, title varchar, fetched timestamp with time zone, placeID serial references pollbc_places(id))")
 	return err
 }
 
@@ -39,8 +39,8 @@ func HasAnnounce(id string) (bool, error) {
 }
 
 func InsertAnnounce(ann Announce) error {
-	_, err := db.Exec("INSERT INTO pollbc_announces (id, date, price, placeID, title, fetched) VALUES ($1, $2, $3, $4, $5, $6)",
-		ann.ID, ann.Date, ann.Price, ann.PlaceID, ann.Title, ann.Fetched)
+	_, err := db.Exec("INSERT INTO pollbc_announces (id, date, price, title, fetched, placeID) VALUES ($1, $2, $3, $4, $5, $6)",
+		ann.ID, ann.Date, ann.Price, ann.Title, ann.Fetched, ann.PlaceID)
 	return err
 }
 
@@ -66,7 +66,7 @@ func scanAnnounces(rows *sql.Rows) ([]Announce, error) {
 	ann := make([]Announce, 0)
 	for rows.Next() {
 		a := Announce{}
-		err := rows.Scan(&a.ID, &a.Date, &a.Price, &a.PlaceID, &a.Title, &a.Fetched)
+		err := rows.Scan(&a.ID, &a.Date, &a.Price, &a.Title, &a.Fetched, &a.PlaceID)
 		if err != nil {
 			return ann, err
 		}

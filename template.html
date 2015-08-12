@@ -17,14 +17,15 @@
 					<a class="navbar-brand" href="/">pollbc</a>
 				</div>
 				<form class="navbar-form" action="/">
-					{{if .Departments}}
-					<select class="form-control" name="department">
+					{{if .PrintDpts}}
+					<select class="form-control" name="departmentID">
 						{{range $dep := .Departments}}
-						<option value="{{$dep}}">{{$dep}}</option>
+						<option value="{{$dep.ID}}">{{$dep.Name}}</option>
 						{{end}}
 					</select>
 					{{else}}
 					<select class="form-control" name="placeID">
+						{{$dpt := index .Departments 0}}
 						{{range $place := .Places}}
 						{{if $place.City}}
 						<option value="{{$place.ID}}">
@@ -32,7 +33,7 @@
 						</option>
 						{{else if $place.Arrondissement}}
 						<option value="{{$place.ID}}">
-						{{$place.Department}} {{$place.Arrondissement}}
+						{{$dpt.Name}} {{$place.Arrondissement}}
 						</option>
 						{{end}}
 						{{end}}
@@ -43,7 +44,8 @@
 			</div>
 		</div>
 
-		{{$map := .Map}}
+		{{$placeMap := .PlaceMap}}
+		{{$dptMap := .DptMap}}
 		{{$loc := .Location}}
 		<div class="container">
 			{{range .Announces}}
@@ -54,13 +56,14 @@
 				<br>
 				<a href={{.ID}}>{{.Title}}</a> 
 				<br>
-				{{$place := index $map .PlaceID}}
+				{{$place := index $placeMap .PlaceID}}
+				{{$dpt := index $dptMap $place.DepartmentID}}
 				{{if $place.City}}
-				<a href="/?placeID={{.PlaceID}}">{{$place.City}}</a> / <a href="/?department={{$place.Department}}">{{$place.Department}}</a>
+				<a href="/?placeID={{.PlaceID}}">{{$place.City}}</a> / <a href="/?departmentID={{$place.DepartmentID}}">{{$dpt.Name}}</a>
 				{{else if $place.Arrondissement}}
-				<a href="/?department={{$place.Department}}">{{$place.Department}}</a> <a href="/?placeID={{.PlaceID}}">{{$place.Arrondissement}}</a>
+				<a href="/?departmentID={{$place.DepartmentID}}">{{$dpt.Name}}</a> <a href="/?placeID={{.PlaceID}}">{{$place.Arrondissement}}</a>
 				{{else}}
-				<a href="/?department={{$place.Department}}">{{$place.Department}}</a>
+				<a href="/?departmentID={{$place.DepartmentID}}">{{$dpt.Name}}</a>
 				{{end}}
 				{{if .Price}}<br><strong>{{.Price}}</strong>{{end}}
 			</div>
