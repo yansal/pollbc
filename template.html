@@ -54,7 +54,7 @@
 				{{$fetched := .Fetched.In $loc}}
 				{{.Date.Format "Monday January 2 15:04"}} (fetched at {{$fetched.Format "15:04"}})
 				<br>
-				<a href={{.PK}}>{{.Title}}</a> 
+				<a href={{.URL}}>{{.Title}}</a>
 				<br>
 				{{$place := index $placeMap .PlacePK}}
 				{{$dpt := index $dptMap $place.DepartmentPK}}
