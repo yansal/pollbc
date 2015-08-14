@@ -14,20 +14,6 @@ import (
 
 func init() {
 	models.InitDB(os.Getenv("DATABASE_URL"))
-
-	var err error
-	err = models.CreateTableDepartements()
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = models.CreateTablePlaces()
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = models.CreateTableAnnounces()
-	if err != nil {
-		log.Fatal(err)
-	}
 }
 
 var paris *time.Location

@@ -18,4 +18,17 @@ func InitDB(datasourceName string) {
 	if err != nil {
 		panic(err)
 	}
+
+	err = CreateTableDepartements()
+	if err != nil {
+		panic(err)
+	}
+	err = CreateTablePlaces()
+	if err != nil {
+		panic(err)
+	}
+	err = CreateTableAnnounces()
+	if err != nil {
+		panic(err)
+	}
 }
