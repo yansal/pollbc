@@ -213,11 +213,6 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	sort.Sort(models.ByDate(ann))
-	if len(ann) > 35 {
-		ann = ann[:35]
-	}
-
 	if places[0].City != "" {
 		sort.Sort(models.ByCity(places))
 	} else {

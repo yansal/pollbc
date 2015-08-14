@@ -16,12 +16,6 @@ type Announce struct {
 	PlaceID int
 }
 
-type ByDate []Announce
-
-func (d ByDate) Len() int           { return len(d) }
-func (d ByDate) Swap(i, j int)      { d[i], d[j] = d[j], d[i] }
-func (d ByDate) Less(i, j int) bool { return d[i].Date.After(d[j].Date) }
-
 func CreateTableAnnounces() error {
 	_, err := db.Exec("CREATE TABLE pollbc_announces (id varchar PRIMARY KEY, date timestamp with time zone, price varchar, title varchar, fetched timestamp with time zone, placeID serial references pollbc_places(id))")
 	return err
@@ -45,7 +39,7 @@ func InsertAnnounce(ann Announce) error {
 }
 
 func SelectAnnounces() ([]Announce, error) {
-	rows, err := db.Query("SELECT * FROM pollbc_announces")
+	rows, err := db.Query("SELECT * FROM pollbc_announces ORDER BY date DESC LIMIT 35")
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +48,7 @@ func SelectAnnounces() ([]Announce, error) {
 }
 
 func SelectAnnouncesWherePlaceID(placeID int) ([]Announce, error) {
-	rows, err := db.Query("SELECT * FROM pollbc_announces WHERE placeID=$1", placeID)
+	rows, err := db.Query("SELECT * FROM pollbc_announces WHERE placeID=$1 ORDER BY date DESC LIMIT 35", placeID)
 	if err != nil {
 		return nil, err
 	}
