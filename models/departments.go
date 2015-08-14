@@ -3,7 +3,7 @@ package models
 import "database/sql"
 
 type Department struct {
-	ID   int
+	PK   int
 	Name string
 }
 
@@ -15,16 +15,16 @@ func (d ByName) Less(i, j int) bool { return d[i].Name < d[j].Name }
 
 func CreateTableDepartements() error {
 	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS pollbc_departements (
-		id serial PRIMARY KEY,
-		name text
+		pk serial PRIMARY KEY,
+		name text UNIQUE NOT NULL
 	);`)
 	return err
 }
 
 func HasDepartment(dpt Department) (bool, error) {
-	var id int
-	err := db.QueryRow("SELECT id FROM pollbc_departements WHERE name=$1",
-		dpt.Name).Scan(&id)
+	var pk int
+	err := db.QueryRow("SELECT pk FROM pollbc_departements WHERE name=$1",
+		dpt.Name).Scan(&pk)
 	if err == sql.ErrNoRows {
 		return false, nil
 	} else if err != nil {
@@ -49,7 +49,7 @@ func SelectDepartments() ([]Department, error) {
 	var dpts []Department
 	for rows.Next() {
 		dpt := Department{}
-		err := rows.Scan(&dpt.ID, &dpt.Name)
+		err := rows.Scan(&dpt.PK, &dpt.Name)
 		if err != nil {
 			return dpts, err
 		}
@@ -62,14 +62,14 @@ func SelectDepartments() ([]Department, error) {
 	return dpts, nil
 }
 
-func SelectDepartmentWhereID(id int) (dpt Department, err error) {
-	err = db.QueryRow("SELECT * FROM pollbc_departements WHERE id=$1",
-		id).Scan(&dpt.ID, &dpt.Name)
+func SelectDepartmentWherePK(pk int) (dpt Department, err error) {
+	err = db.QueryRow("SELECT * FROM pollbc_departements WHERE pk=$1",
+		pk).Scan(&dpt.PK, &dpt.Name)
 	return
 }
 
-func SelectIDFromDepartment(dpt Department) (id int, err error) {
-	err = db.QueryRow("SELECT id FROM pollbc_departements WHERE name=$1",
-		dpt.Name).Scan(&id)
-	return id, err
+func SelectPKFromDepartment(dpt Department) (pk int, err error) {
+	err = db.QueryRow("SELECT pk FROM pollbc_departements WHERE name=$1",
+		dpt.Name).Scan(&pk)
+	return pk, err
 }

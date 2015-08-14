@@ -68,11 +68,11 @@ func poll() {
 					log.Print(err)
 				}
 			}
-			dptID, err := models.SelectIDFromDepartment(dpt)
+			dptPK, err := models.SelectPKFromDepartment(dpt)
 			if err != nil {
 				log.Print(err)
 			}
-			place.DepartmentID = dptID
+			place.DepartmentPK = dptPK
 
 			ok, err = models.HasPlace(place)
 			if err != nil {
@@ -83,23 +83,23 @@ func poll() {
 					log.Print(err)
 				}
 			}
-			placeID, err := models.SelectIDFromPlaces(place)
+			placePK, err := models.SelectPKFromPlaces(place)
 			if err != nil {
 				log.Print(err)
 			}
 
-			id := queryID(n)
-			if id == "" {
+			url := queryURL(n)
+			if url == "" {
 				continue
 			}
-			ok, err = models.HasAnnounce(id)
+			ok, err = models.HasAnnounce(url)
 			if err != nil {
 				log.Print(err)
 			} else if !ok {
 				count++
-				ann := models.Announce{ID: id, Fetched: time.Now().In(paris)}
+				ann := models.Announce{URL: url, Fetched: time.Now().In(paris)}
 				ann.Date = queryDate(n)
-				ann.PlaceID = placeID
+				ann.PlacePK = placePK
 				ann.Price = queryPrice(n)
 				ann.Title = queryTitle(n)
 				err := models.InsertAnnounce(ann)
@@ -139,32 +139,32 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 	printDpts := false
 
 	q := map[string][]string(r.URL.Query())
-	placeIDsQuery := q["placeID"]
-	departmentIDsQuery := q["departmentID"]
+	placePKsQuery := q["placePK"]
+	departmentPKsQuery := q["departmentPK"]
 
-	if placeIDsQuery != nil {
-		for _, placeID := range placeIDsQuery {
-			placeID, err := strconv.Atoi(placeID)
+	if placePKsQuery != nil {
+		for _, placePK := range placePKsQuery {
+			placePK, err := strconv.Atoi(placePK)
 			if err != nil {
 				log.Print(err)
 			}
-			dptID, err := models.SelectDepartmentIDWhereID(placeID)
+			dptPK, err := models.SelectDepartmentPKWherePK(placePK)
 			if err != nil {
 				log.Print(err)
 			}
-			dpt, err := models.SelectDepartmentWhereID(dptID)
+			dpt, err := models.SelectDepartmentWherePK(dptPK)
 			if err != nil {
 				log.Print(err)
 			}
 			departments = append(departments, dpt)
-			newAnn, err := models.SelectAnnouncesWherePlaceID(placeID)
+			newAnn, err := models.SelectAnnouncesWherePlacePK(placePK)
 			if err != nil {
 				log.Print(err)
 			}
 			ann = append(ann, newAnn...)
 		}
 		for _, dpt := range departments {
-			departmentPlaces, err := models.SelectPlacesWhereDepartmentID(dpt.ID)
+			departmentPlaces, err := models.SelectPlacesWhereDepartmentPK(dpt.PK)
 			if err != nil {
 				log.Print(err)
 			}
@@ -172,23 +172,23 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 				places = append(places, place)
 			}
 		}
-	} else if departmentIDsQuery != nil {
-		for _, dptID := range departmentIDsQuery {
-			dptID, err := strconv.Atoi(dptID)
+	} else if departmentPKsQuery != nil {
+		for _, dptPK := range departmentPKsQuery {
+			dptPK, err := strconv.Atoi(dptPK)
 			if err != nil {
 				log.Print(err)
 			}
-			dpt, err := models.SelectDepartmentWhereID(dptID)
+			dpt, err := models.SelectDepartmentWherePK(dptPK)
 			if err != nil {
 				log.Print(err)
 			}
 			departments = append(departments, dpt)
-			places, err = models.SelectPlacesWhereDepartmentID(dptID)
+			places, err = models.SelectPlacesWhereDepartmentPK(dptPK)
 			if err != nil {
 				log.Print(err)
 			}
 			for _, place := range places {
-				newAnn, err := models.SelectAnnouncesWherePlaceID(place.ID)
+				newAnn, err := models.SelectAnnouncesWherePlacePK(place.PK)
 				if err != nil {
 					log.Print(err)
 				}
@@ -219,10 +219,10 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 		sort.Sort(models.ByArrondissement(places))
 	}
 	for _, d := range departments {
-		dptMap[d.ID] = d
+		dptMap[d.PK] = d
 	}
 	for _, p := range places {
-		placesMap[p.ID] = p
+		placesMap[p.PK] = p
 	}
 
 	data := struct {

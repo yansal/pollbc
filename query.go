@@ -52,7 +52,7 @@ func queryAnnounces(doc *html.Node) []*html.Node {
 	return nodes
 }
 
-func queryID(n *html.Node) string {
+func queryURL(n *html.Node) string {
 	for _, a := range n.Attr {
 		if a.Key == "href" {
 			return a.Val

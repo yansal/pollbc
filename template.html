@@ -18,21 +18,21 @@
 				</div>
 				<form class="navbar-form" action="/">
 					{{if .PrintDpts}}
-					<select class="form-control" name="departmentID">
+					<select class="form-control" name="departmentPK">
 						{{range $dep := .Departments}}
-						<option value="{{$dep.ID}}">{{$dep.Name}}</option>
+						<option value="{{$dep.PK}}">{{$dep.Name}}</option>
 						{{end}}
 					</select>
 					{{else}}
-					<select class="form-control" name="placeID">
+					<select class="form-control" name="placePK">
 						{{$dpt := index .Departments 0}}
 						{{range $place := .Places}}
 						{{if $place.City}}
-						<option value="{{$place.ID}}">
+						<option value="{{$place.PK}}">
 						{{$place.City}}
 						</option>
 						{{else if $place.Arrondissement}}
-						<option value="{{$place.ID}}">
+						<option value="{{$place.PK}}">
 						{{$dpt.Name}} {{$place.Arrondissement}}
 						</option>
 						{{end}}
@@ -54,16 +54,16 @@
 				{{$fetched := .Fetched.In $loc}}
 				{{.Date.Format "Monday January 2 15:04"}} (fetched at {{$fetched.Format "15:04"}})
 				<br>
-				<a href={{.ID}}>{{.Title}}</a> 
+				<a href={{.PK}}>{{.Title}}</a> 
 				<br>
-				{{$place := index $placeMap .PlaceID}}
-				{{$dpt := index $dptMap $place.DepartmentID}}
+				{{$place := index $placeMap .PlacePK}}
+				{{$dpt := index $dptMap $place.DepartmentPK}}
 				{{if $place.City}}
-				<a href="/?placeID={{.PlaceID}}">{{$place.City}}</a> / <a href="/?departmentID={{$place.DepartmentID}}">{{$dpt.Name}}</a>
+				<a href="/?placePK={{.PlacePK}}">{{$place.City}}</a> / <a href="/?departmentPK={{$place.DepartmentPK}}">{{$dpt.Name}}</a>
 				{{else if $place.Arrondissement}}
-				<a href="/?departmentID={{$place.DepartmentID}}">{{$dpt.Name}}</a> <a href="/?placeID={{.PlaceID}}">{{$place.Arrondissement}}</a>
+				<a href="/?departmentPK={{$place.DepartmentPK}}">{{$dpt.Name}}</a> <a href="/?placePK={{.PlacePK}}">{{$place.Arrondissement}}</a>
 				{{else}}
-				<a href="/?departmentID={{$place.DepartmentID}}">{{$dpt.Name}}</a>
+				<a href="/?departmentPK={{$place.DepartmentPK}}">{{$dpt.Name}}</a>
 				{{end}}
 				{{if .Price}}<br><strong>{{.Price}}</strong>{{end}}
 			</div>

@@ -8,11 +8,11 @@ import (
 )
 
 type Place struct {
-	ID             int
+	PK             int
 	City           string
 	Arrondissement string
 
-	DepartmentID int
+	DepartmentPK int
 }
 
 type ByCity []Place
@@ -49,18 +49,18 @@ func toInt(s string) (int, error) {
 
 func CreateTablePlaces() error {
 	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS pollbc_places (
-		id serial PRIMARY KEY,
+		pk serial PRIMARY KEY,
 		city text,
 		arrondissement text,
-		departmentID serial references pollbc_departements(id)
+		department_pk serial REFERENCES pollbc_departements(pk)
 	);`)
 	return err
 }
 
 func HasPlace(place Place) (bool, error) {
-	var id int
-	err := db.QueryRow("SELECT id FROM pollbc_places WHERE city=$1 AND arrondissement=$2 AND departmentID=$3",
-		place.City, place.Arrondissement, place.DepartmentID).Scan(&id)
+	var pk int
+	err := db.QueryRow("SELECT pk FROM pollbc_places WHERE city=$1 AND arrondissement=$2 AND department_pk=$3",
+		place.City, place.Arrondissement, place.DepartmentPK).Scan(&pk)
 	if err == sql.ErrNoRows {
 		return false, nil
 	} else if err != nil {
@@ -71,8 +71,8 @@ func HasPlace(place Place) (bool, error) {
 }
 
 func InsertPlace(place Place) error {
-	_, err := db.Exec("INSERT INTO pollbc_places (city, arrondissement, departmentID) VALUES ($1, $2, $3)",
-		place.City, place.Arrondissement, place.DepartmentID)
+	_, err := db.Exec("INSERT INTO pollbc_places (city, arrondissement, department_pk) VALUES ($1, $2, $3)",
+		place.City, place.Arrondissement, place.DepartmentPK)
 	return err
 }
 
@@ -85,8 +85,8 @@ func SelectPlaces() ([]Place, error) {
 	return scanPlaces(rows)
 }
 
-func SelectPlacesWhereDepartmentID(dptID int) ([]Place, error) {
-	rows, err := db.Query("SELECT * FROM pollbc_places WHERE departmentID=$1", dptID)
+func SelectPlacesWhereDepartmentPK(dptPK int) ([]Place, error) {
+	rows, err := db.Query("SELECT * FROM pollbc_places WHERE department_pk=$1", dptPK)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func scanPlaces(rows *sql.Rows) ([]Place, error) {
 	var places []Place
 	for rows.Next() {
 		place := Place{}
-		err := rows.Scan(&place.ID, &place.City, &place.Arrondissement, &place.DepartmentID)
+		err := rows.Scan(&place.PK, &place.City, &place.Arrondissement, &place.DepartmentPK)
 		if err != nil {
 			return places, err
 		}
@@ -111,13 +111,13 @@ func scanPlaces(rows *sql.Rows) ([]Place, error) {
 	return places, nil
 }
 
-func SelectIDFromPlaces(place Place) (id int, err error) {
-	err = db.QueryRow("SELECT id FROM pollbc_places WHERE city=$1 AND arrondissement=$2 AND departmentID=$3",
-		place.City, place.Arrondissement, place.DepartmentID).Scan(&id)
-	return id, err
+func SelectPKFromPlaces(place Place) (pk int, err error) {
+	err = db.QueryRow("SELECT pk FROM pollbc_places WHERE city=$1 AND arrondissement=$2 AND department_pk=$3",
+		place.City, place.Arrondissement, place.DepartmentPK).Scan(&pk)
+	return pk, err
 }
 
-func SelectDepartmentIDWhereID(id int) (dptID int, err error) {
-	err = db.QueryRow("SELECT departmentID FROM pollbc_places WHERE id=$1", id).Scan(&dptID)
-	return dptID, err
+func SelectDepartmentPKWherePK(pk int) (dptPK int, err error) {
+	err = db.QueryRow("SELECT department_pk FROM pollbc_places WHERE pk=$1", pk).Scan(&dptPK)
+	return dptPK, err
 }
