@@ -52,7 +52,8 @@ func CreateTablePlaces() error {
 		pk serial PRIMARY KEY,
 		city text,
 		arrondissement text,
-		department_pk serial REFERENCES pollbc_departements(pk)
+		department_pk serial REFERENCES pollbc_departements(pk),
+		UNIQUE(city, arrondissement, department_pk)
 	);`)
 	return err
 }
