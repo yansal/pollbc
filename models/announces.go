@@ -17,7 +17,14 @@ type Announce struct {
 }
 
 func CreateTableAnnounces() error {
-	_, err := db.Exec("CREATE TABLE pollbc_announces (id varchar PRIMARY KEY, date timestamp with time zone, price varchar, title varchar, fetched timestamp with time zone, placeID serial references pollbc_places(id))")
+	_, err := db.Exec(`CREATE TABLE pollbc_announces (
+		id varchar PRIMARY KEY,
+		date timestamp with time zone,
+		price varchar,
+		title varchar,
+		fetched timestamp with time zone,
+		placeID serial references pollbc_places(id)
+	);`)
 	return err
 }
 
