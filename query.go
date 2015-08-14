@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -52,16 +51,16 @@ func queryAnnounces(doc *html.Node) []*html.Node {
 	return nodes
 }
 
-func queryURL(n *html.Node) string {
+func queryURL(n *html.Node) (string, error) {
 	for _, a := range n.Attr {
 		if a.Key == "href" {
-			return a.Val
+			return a.Val, nil
 		}
 	}
-	return ""
+	return "", errors.New("Can't find href in html node")
 }
 
-func queryDate(n *html.Node) time.Time {
+func queryDate(n *html.Node) (time.Time, error) {
 	var dateNode *html.Node
 	var f func(*html.Node)
 	f = func(n *html.Node) {
@@ -95,7 +94,7 @@ func queryDate(n *html.Node) time.Time {
 		var err error
 		d, err = strconv.Atoi(split[0])
 		if err != nil {
-			log.Fatal(err)
+			return time.Time{}, err
 		}
 
 		switch split[1] {
@@ -124,7 +123,7 @@ func queryDate(n *html.Node) time.Time {
 		case "decembre":
 			mon = time.December
 		default:
-			log.Fatal("Problem parsing the month")
+			return time.Time{}, errors.New("Problem parsing the month")
 		}
 
 		thisYear, _, _ := now.Date()
@@ -138,14 +137,14 @@ func queryDate(n *html.Node) time.Time {
 	split := strings.Split(clock, ":")
 	h, err := strconv.Atoi(split[0])
 	if err != nil {
-		log.Fatal(err)
+		return time.Time{}, err
 	}
 	min, err := strconv.Atoi(split[1])
 	if err != nil {
-		log.Fatal(err)
+		return time.Time{}, err
 	}
 
-	return time.Date(y, mon, d, h, min, 0, 0, time.Local)
+	return time.Date(y, mon, d, h, min, 0, 0, time.Local), nil
 }
 
 func queryPlace(n *html.Node) (models.Place, models.Department, error) {
@@ -169,7 +168,7 @@ func queryPlace(n *html.Node) (models.Place, models.Department, error) {
 	dpt := models.Department{}
 	if placeNode == nil {
 		// TODO render node
-		return place, dpt, errors.New("queryPlace: can't find <div class=placement> in html node")
+		return place, dpt, errors.New("Can't find <div class=placement> in html node")
 	}
 
 	placeString := strings.Join(strings.Fields(strings.TrimSpace(placeNode.FirstChild.Data)), " ")

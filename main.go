@@ -88,8 +88,9 @@ func poll() {
 				log.Print(err)
 			}
 
-			url := queryURL(n)
-			if url == "" {
+			url, err := queryURL(n)
+			if err != nil {
+				log.Print(err)
 				continue
 			}
 			ok, err = models.HasAnnounce(url)
@@ -98,7 +99,11 @@ func poll() {
 			} else if !ok {
 				count++
 				ann := models.Announce{URL: url, Fetched: time.Now().In(paris)}
-				ann.Date = queryDate(n)
+				ann.Date, err = queryDate(n)
+				if err != nil {
+					log.Print(err)
+					continue
+				}
 				ann.PlacePK = placePK
 				ann.Price = queryPrice(n)
 				ann.Title = queryTitle(n)
