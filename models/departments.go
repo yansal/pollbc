@@ -16,7 +16,7 @@ func (d ByName) Less(i, j int) bool { return d[i].Name < d[j].Name }
 func CreateTableDepartements() error {
 	_, err := db.Exec(`CREATE TABLE pollbc_departements (
 		id serial PRIMARY KEY,
-		name varchar
+		name text
 	);`)
 	return err
 }
