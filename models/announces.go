@@ -21,10 +21,10 @@ func CreateTableAnnounces() error {
 	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS pollbc_announces (
 		pk serial PRIMARY KEY,
 		url text UNIQUE NOT NULL,
-		date timestamp with time zone,
+		date timestamp with time zone NOT NULL,
 		price text,
-		title text,
-		fetched timestamp with time zone,
+		title text NOT NULL,
+		fetched timestamp with time zone NOT NULL,
 		place_pk serial REFERENCES pollbc_places(pk)
 	);`)
 	return err
