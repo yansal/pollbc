@@ -17,7 +17,7 @@ type Announce struct {
 }
 
 func CreateTableAnnounces() error {
-	_, err := db.Exec(`CREATE TABLE pollbc_announces (
+	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS pollbc_announces (
 		id text PRIMARY KEY,
 		date timestamp with time zone,
 		price text,

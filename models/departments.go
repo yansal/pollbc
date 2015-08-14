@@ -14,7 +14,7 @@ func (d ByName) Swap(i, j int)      { d[i], d[j] = d[j], d[i] }
 func (d ByName) Less(i, j int) bool { return d[i].Name < d[j].Name }
 
 func CreateTableDepartements() error {
-	_, err := db.Exec(`CREATE TABLE pollbc_departements (
+	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS pollbc_departements (
 		id serial PRIMARY KEY,
 		name text
 	);`)

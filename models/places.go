@@ -48,7 +48,7 @@ func toInt(s string) (int, error) {
 }
 
 func CreateTablePlaces() error {
-	_, err := db.Exec(`CREATE TABLE pollbc_places (
+	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS pollbc_places (
 		id serial PRIMARY KEY,
 		city text,
 		arrondissement text,

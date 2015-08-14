@@ -18,15 +18,15 @@ func init() {
 	var err error
 	err = models.CreateTableDepartements()
 	if err != nil {
-		log.Print(err)
+		log.Fatal(err)
 	}
 	err = models.CreateTablePlaces()
 	if err != nil {
-		log.Print(err)
+		log.Fatal(err)
 	}
 	err = models.CreateTableAnnounces()
 	if err != nil {
-		log.Print(err)
+		log.Fatal(err)
 	}
 }
 
