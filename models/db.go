@@ -31,4 +31,8 @@ func InitDB(datasourceName string) {
 	if err != nil {
 		panic(err)
 	}
+	err = CreateTableUsers()
+	if err != nil {
+		panic(err)
+	}
 }
