@@ -178,13 +178,11 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				log.Print(err)
 			}
-			for _, place := range places {
-				newAnn, err := models.SelectAnnouncesWherePlacePK(place.PK)
-				if err != nil {
-					log.Print(err)
-				}
-				ann = append(ann, newAnn...)
+			newAnn, err := models.SelectAnnouncesWhereDepartmentPK(dptPK)
+			if err != nil {
+				log.Print(err)
 			}
+			ann = append(ann, newAnn...)
 		}
 	} else {
 		printDpts = true

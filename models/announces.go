@@ -66,6 +66,15 @@ func SelectAnnouncesWherePlacePK(placePK int) ([]Announce, error) {
 	return scanAnnounces(rows)
 }
 
+func SelectAnnouncesWhereDepartmentPK(departmendPK int) ([]Announce, error) {
+	rows, err := db.Query("SELECT * FROM pollbc_announces WHERE place_pk IN (SELECT pk from pollbc_places WHERE department_pk=$1) ORDER BY date DESC LIMIT 35", departmendPK)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return scanAnnounces(rows)
+}
+
 func scanAnnounces(rows *sql.Rows) ([]Announce, error) {
 	ann := make([]Announce, 0)
 	for rows.Next() {
