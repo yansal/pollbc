@@ -159,9 +159,7 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				log.Print(err)
 			}
-			for _, place := range departmentPlaces {
-				places = append(places, place)
-			}
+			places = append(places, departmentPlaces...)
 		}
 		if places[0].City != "" {
 			sort.Sort(models.ByCity(places))
