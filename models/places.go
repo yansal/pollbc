@@ -28,11 +28,11 @@ func (d ByArrondissement) Swap(i, j int) { d[i], d[j] = d[j], d[i] }
 func (d ByArrondissement) Less(i, j int) bool {
 	ai, err := toInt(d[i].Arrondissement)
 	if err != nil {
-		log.Print(err)
+		log.Print("ByArrondissement.Less: " + err.Error())
 	}
 	aj, err := toInt(d[j].Arrondissement)
 	if err != nil {
-		log.Print(err)
+		log.Print("ByArrondissement.Less: " + err.Error())
 	}
 	return ai < aj
 }

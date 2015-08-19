@@ -163,6 +163,11 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 				places = append(places, place)
 			}
 		}
+		if places[0].City != "" {
+			sort.Sort(models.ByCity(places))
+		} else {
+			sort.Sort(models.ByArrondissement(places))
+		}
 	} else if departmentPKsQuery != nil {
 		for _, dptPK := range departmentPKsQuery {
 			dptPK, err := strconv.Atoi(dptPK)
@@ -184,6 +189,11 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			ann = append(ann, newAnn...)
 		}
+		if places[0].City != "" {
+			sort.Sort(models.ByCity(places))
+		} else {
+			sort.Sort(models.ByArrondissement(places))
+		}
 	} else {
 		printDpts = true
 		var err error
@@ -202,11 +212,6 @@ func serveHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if places[0].City != "" {
-		sort.Sort(models.ByCity(places))
-	} else {
-		sort.Sort(models.ByArrondissement(places))
-	}
 	for _, d := range departments {
 		dptMap[d.PK] = d
 	}
