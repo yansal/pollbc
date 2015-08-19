@@ -36,7 +36,7 @@ func poll() {
 		}
 		nodes := queryAnnounces(doc)
 
-		count := 0
+		var newAnnounces []models.Announce
 		for _, n := range nodes {
 			place, dpt, err := queryPlace(n)
 			if err != nil {
@@ -83,7 +83,6 @@ func poll() {
 			if err != nil {
 				log.Print(err)
 			} else if !ok {
-				count++
 				ann := models.Announce{URL: url, Fetched: time.Now().In(paris)}
 				ann.Date, err = queryDate(n)
 				if err != nil {
@@ -96,15 +95,43 @@ func poll() {
 				err := models.InsertAnnounce(ann)
 				if err != nil {
 					log.Print(err)
+					continue
 				}
+				newAnnounces = append(newAnnounces, ann)
 			}
 		}
 
-		if count > 0 {
-			// TODO: Notify by email?
-			log.Printf("Number of new announces fetched:\t%d\n", count)
+		if len(newAnnounces) > 0 {
+			log.Printf("Number of new announces fetched:\t%d", len(newAnnounces))
+			go notify(newAnnounces)
 		}
 		time.Sleep(5 * time.Second)
+	}
+}
+
+func notify(announces []models.Announce) {
+	users, err := models.SelectUsers()
+	if err != nil {
+		log.Print(err)
+		return
+	}
+	for _, user := range users {
+		placePK, err := models.SelectPlacesPKWhereUserPK(user.PK)
+		if err != nil {
+			log.Print(err)
+			continue
+		}
+		var userAnnounces []models.Announce
+		for _, ann := range announces {
+			for _, pk := range placePK {
+				if ann.PlacePK == pk {
+					userAnnounces = append(userAnnounces, ann)
+				}
+			}
+		}
+		if len(userAnnounces) > 0 {
+			log.Printf("Number of announces notified to %v:\t%v", user.Email, len(userAnnounces))
+		}
 	}
 }
 
