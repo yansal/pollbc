@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"html/template"
 	"log"
 	"net/http"
+	"net/smtp"
 	"os"
 	"sort"
 	"strconv"
@@ -109,6 +111,13 @@ func poll() {
 	}
 }
 
+var (
+	smtpLogin    = os.Getenv("MAILGUN_SMTP_LOGIN")
+	smtpPassword = os.Getenv("MAILGUN_SMTP_PASSWORD")
+	smtpServer   = os.Getenv("MAILGUN_SMTP_SERVER")
+	smtpPort     = os.Getenv("MAILGUN_SMTP_PORT")
+)
+
 func notify(announces []models.Announce) {
 	users, err := models.SelectUsers()
 	if err != nil {
@@ -130,6 +139,25 @@ func notify(announces []models.Announce) {
 			}
 		}
 		if len(userAnnounces) > 0 {
+			data := struct {
+				User      models.User
+				Announces []models.Announce
+			}{user, userAnnounces}
+			t := template.Must(template.ParseFiles("template.mail.txt"))
+			buf := new(bytes.Buffer)
+			err := t.Execute(buf, data)
+			if err != nil {
+				log.Print(err)
+				continue
+			}
+			auth := smtp.PlainAuth("", smtpLogin, smtpPassword, smtpServer)
+			to := []string{user.Email}
+			msg := buf.Bytes()
+			err = smtp.SendMail(smtpServer+":"+smtpPort, auth, "yann@pollbc.herokuapp.com", to, msg)
+			if err != nil {
+				log.Print(err)
+				continue
+			}
 			log.Printf("Number of announces notified to %v:\t%v", user.Email, len(userAnnounces))
 		}
 	}

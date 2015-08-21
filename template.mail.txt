@@ -1,0 +1,11 @@
+Subject: {{$count := len .Announces}}{{if eq $count 1}}1 new announce{{else}}{{$count}} new announces{{end}} from leboncoin.fr
+To: {{.User.Email}}
+
+Hello {{.User.Email}}, here {{if eq $count 1}}is 1 new announce{{else}}are {{$count}} new announces{{end}} from leboncoin.fr:
+{{range .Announces}}
+*	{{.Title}}
+	{{.URL}}
+{{end}}
+Have a good day,
+
+Yann, from pollbc.herokuapp.com
