@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -33,12 +34,12 @@ func fetch() (*html.Node, error) {
 }
 
 func queryAnnounces(doc *html.Node) []*html.Node {
-	nodes := make([]*html.Node, 0)
+	var nodes []*html.Node
 	var f func(*html.Node)
 	f = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "div" {
+		if n.Type == html.ElementNode && n.Data == "a" {
 			for _, a := range n.Attr {
-				if a.Key == "class" && a.Val == "lbc" {
+				if a.Key == "class" && a.Val == "list_item clearfix trackable" {
 					nodes = append(nodes, n.Parent)
 				}
 			}
@@ -48,13 +49,16 @@ func queryAnnounces(doc *html.Node) []*html.Node {
 		}
 	}
 	f(doc)
+	if len(nodes) == 0 {
+		log.Print("queryAnnounces: len(nodes) == 0")
+	}
 	return nodes
 }
 
 func queryURL(n *html.Node) (string, error) {
-	for _, a := range n.Attr {
+	for _, a := range n.FirstChild.NextSibling.Attr {
 		if a.Key == "href" {
-			return a.Val, nil
+			return "http:" + a.Val, nil
 		}
 	}
 	return "", errors.New("Can't find href in html node")
@@ -63,12 +67,16 @@ func queryURL(n *html.Node) (string, error) {
 func queryDate(n *html.Node) (time.Time, error) {
 	var dateNode *html.Node
 	var f func(*html.Node)
+	count := 0
 	f = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "div" {
+		if n.Type == html.ElementNode && n.Data == "p" {
 			for _, a := range n.Attr {
-				if a.Key == "class" && a.Val == "date" {
-					dateNode = n
-					return
+				if a.Key == "class" && a.Val == "item_supp" {
+					count++
+					if count == 3 {
+						dateNode = n
+						return
+					}
 				}
 			}
 		}
@@ -78,8 +86,12 @@ func queryDate(n *html.Node) (time.Time, error) {
 	}
 	f(n)
 
-	date := dateNode.FirstChild.NextSibling.FirstChild.Data
-	clock := dateNode.FirstChild.NextSibling.NextSibling.NextSibling.FirstChild.Data
+	split := strings.Split(strings.TrimSpace(dateNode.FirstChild.Data), ", ")
+	if len(split) != 2 {
+		return time.Time{}, fmt.Errorf("date is %+v", split)
+	}
+	date := split[0]
+	clock := split[1]
 
 	now := time.Now().In(paris)
 	var y, d int
@@ -134,7 +146,7 @@ func queryDate(n *html.Node) (time.Time, error) {
 		}
 	}
 
-	split := strings.Split(clock, ":")
+	split = strings.Split(clock, ":")
 	h, err := strconv.Atoi(split[0])
 	if err != nil {
 		return time.Time{}, err
@@ -150,12 +162,16 @@ func queryDate(n *html.Node) (time.Time, error) {
 func queryPlace(n *html.Node) (models.Place, models.Department, error) {
 	var placeNode *html.Node
 	var f func(*html.Node)
+	count := 0
 	f = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "div" {
+		if n.Type == html.ElementNode && n.Data == "p" {
 			for _, a := range n.Attr {
-				if a.Key == "class" && a.Val == "placement" {
-					placeNode = n
-					return
+				if a.Key == "class" && a.Val == "item_supp" {
+					count++
+					if count == 2 {
+						placeNode = n
+						return
+					}
 				}
 			}
 		}
@@ -168,7 +184,7 @@ func queryPlace(n *html.Node) (models.Place, models.Department, error) {
 	dpt := models.Department{}
 	if placeNode == nil {
 		// TODO render node
-		return place, dpt, errors.New("Can't find <div class=placement> in html node")
+		return place, dpt, errors.New("Can't find place in html node")
 	}
 
 	placeString := strings.Join(strings.Fields(strings.TrimSpace(placeNode.FirstChild.Data)), " ")
@@ -204,9 +220,9 @@ func queryPrice(n *html.Node) string {
 	var priceNode *html.Node
 	var f func(*html.Node)
 	f = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "div" {
+		if n.Type == html.ElementNode && n.Data == "h3" {
 			for _, a := range n.Attr {
-				if a.Key == "class" && a.Val == "price" {
+				if a.Key == "class" && a.Val == "item_price" {
 					priceNode = n
 					return
 				}
@@ -229,7 +245,7 @@ func queryTitle(n *html.Node) string {
 	f = func(n *html.Node) {
 		if n.Type == html.ElementNode && n.Data == "h2" {
 			for _, a := range n.Attr {
-				if a.Key == "class" && a.Val == "title" {
+				if a.Key == "class" && a.Val == "item_title" {
 					titleNode = n
 					return
 				}
